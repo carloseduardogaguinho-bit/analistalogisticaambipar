@@ -99,7 +99,7 @@ export interface Ocorrencia {
 }
 
 /* =========================================================
-   NOVOS MÓDULOS DE FROTA, MOTORISTAS, MANUTENÇÃO & SUPABASE
+   MÓDULOS DE FROTA, MOTORISTAS, MANUTENÇÃO & CHECKLIST
    ========================================================= */
 
 export type StatusVeiculo = 'Disponível' | 'Em Viagem' | 'Em Manutenção' | 'Inativo';
@@ -173,8 +173,8 @@ export interface ChecklistDiario {
   freiosEstacionamentoEServico: boolean;
   luzesESinalizacao: boolean;
   extintoresPQSValidade: boolean;
-  kitEmergenciaAmbipar: boolean; // Mantas, cones, fita, pá antichispa, EPI químico
-  vazamentoFluidos: boolean; // True = Sem vazamento (OK)
+  kitEmergenciaAmbipar: boolean;
+  vazamentoFluidos: boolean;
   documentacaoMTRCIVCIPP: boolean;
   tacografoDiscoOuDigital: boolean;
   resultado: 'Aprovado - Liberado' | 'Aprovado com Restrição Leve' | 'Reprovado - Bloqueado';
@@ -199,4 +199,121 @@ export interface SupabaseConfig {
   url: string;
   anonKey: string;
   isConnected: boolean;
+}
+
+/* =========================================================
+   PORTAL FISCAL DE EMISSÃO: CT-E, DACTE, MDF-E & DANFE
+   ========================================================= */
+
+export type StatusDocumentoFiscal = 
+  | 'Autorizado'
+  | 'Em Processamento'
+  | 'Cancelado'
+  | 'Rejeitado'
+  | 'Rascunho';
+
+export interface CteDocumento {
+  id: string;
+  numeroCte: string; // Ex: 000004128
+  serie: string; // Ex: 1
+  chaveAcesso: string; // 44 dígitos
+  dataEmissao: string;
+  status: StatusDocumentoFiscal;
+  protocoloAutorizacao?: string;
+  dataAutorizacao?: string;
+  motivoCancelamento?: string;
+  ambiente: 'Homologação (Testes)' | 'Produção';
+
+  // Remetente (Origem da Carga)
+  remetenteNome: string;
+  remetenteCnpj: string;
+  remetenteIe: string;
+  remetenteEndereco: string;
+  remetenteMunicipio: string;
+  remetenteUf: string;
+
+  // Destinatário (Destino da Carga)
+  destinatarioNome: string;
+  destinatarioCnpj: string;
+  destinatarioIe: string;
+  destinatarioEndereco: string;
+  destinatarioMunicipio: string;
+  destinatarioUf: string;
+
+  // Tomador do Frete
+  tomadorServico: 'Remetente' | 'Destinatário' | 'Expedidor' | 'Recebedor';
+
+  // Valores & Tributação
+  valorFretePeso: number;
+  valorPedagio: number;
+  valorGris: number; // Gerenciamento de Risco
+  valorOutros: number;
+  valorTotalServico: number;
+  aliquotaIcms: number;
+  valorIcms: number;
+  cfop: string; // Ex: 5353 ou 6353
+
+  // Carga & Documentos Anexos
+  produtoPredominante: string;
+  classeRiscoOnu?: string; // Ex: Classe 9 - Substâncias Perigosas
+  pesoBrutoKg: number;
+  pesoLiquidoKg: number;
+  valorCargaAverbada: number;
+  numeroNfeCarga: string; // Chave da NF-e vinculada ou número da DANFE
+  numeroMtrVinculado?: string;
+
+  // Veículo & ANTT
+  placaTracao: string;
+  placaReboque?: string;
+  motoristaNome: string;
+  motoristaCpf: string;
+  rntrc: string;
+
+  observacoesFiscais?: string;
+}
+
+export interface MdfeDocumento {
+  id: string;
+  numeroMdfe: string; // Ex: 000000892
+  serie: string;
+  chaveAcesso: string; // 44 dígitos
+  dataEmissao: string;
+  status: StatusDocumentoFiscal;
+  protocoloAutorizacao?: string;
+  ufCarregamento: string;
+  ufDescarregamento: string;
+  municipioCarregamento: string;
+  municipioDescarregamento: string;
+  pesoBrutoTotalKg: number;
+  valorTotalCargas: number;
+  quantidadeCtes: number;
+  ctesChaves: string[];
+  placaVeiculo: string;
+  motoristaNome: string;
+  motoristaCpf: string;
+  rntrc: string;
+  ciot?: string;
+  seguradoraNome: string;
+  seguradoraApolice: string;
+}
+
+export interface EmpresaFiscalConfig {
+  razaoSocial: string;
+  nomeFantasia: string;
+  cnpj: string;
+  inscricaoEstadual: string;
+  rntrc: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  municipio: string;
+  uf: string;
+  cep: string;
+  telefone: string;
+  emailFiscal: string;
+  ambienteSefaz: 'Homologação (Testes)' | 'Produção';
+  certificadoNome: string;
+  certificadoValidade: string;
+  certificadoStatus: 'Válido' | 'Pendente' | 'Expirado';
+  provedorConexao: 'Sefaz Direta (Web Services)' | 'Focus NFe' | 'Nuvem Fiscal' | 'SpeedGov';
 }

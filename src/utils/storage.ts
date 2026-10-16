@@ -8,6 +8,9 @@ import {
   Manutencao,
   ChecklistDiario,
   Abastecimento,
+  CteDocumento,
+  MdfeDocumento,
+  EmpresaFiscalConfig,
 } from '../types';
 import {
   INITIAL_VIAGENS,
@@ -20,6 +23,11 @@ import {
   INITIAL_CHECKLISTS,
   INITIAL_ABASTECIMENTOS,
 } from '../data/mockData';
+import {
+  INITIAL_CTES,
+  INITIAL_MDFES,
+  INITIAL_EMPRESA_FISCAL,
+} from '../data/fiscalData';
 
 const KEYS = {
   VIAGENS: 'ambipar_logistica_viagens_v1',
@@ -31,6 +39,9 @@ const KEYS = {
   MANUTENCOES: 'ambipar_logistica_manutencoes_v1',
   CHECKLISTS: 'ambipar_logistica_checklists_v1',
   ABASTECIMENTOS: 'ambipar_logistica_abastecimentos_v1',
+  CTES: 'ambipar_logistica_ctes_v1',
+  MDFES: 'ambipar_logistica_mdfes_v1',
+  EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v1',
 };
 
 // Viagens
@@ -131,3 +142,36 @@ export const getStoredAbastecimentos = (): Abastecimento[] => {
   try { return JSON.parse(data); } catch { return INITIAL_ABASTECIMENTOS; }
 };
 export const saveStoredAbastecimentos = (data: Abastecimento[]) => localStorage.setItem(KEYS.ABASTECIMENTOS, JSON.stringify(data));
+
+// CT-es
+export const getStoredCtes = (): CteDocumento[] => {
+  const data = localStorage.getItem(KEYS.CTES);
+  if (!data) {
+    localStorage.setItem(KEYS.CTES, JSON.stringify(INITIAL_CTES));
+    return INITIAL_CTES;
+  }
+  try { return JSON.parse(data); } catch { return INITIAL_CTES; }
+};
+export const saveStoredCtes = (data: CteDocumento[]) => localStorage.setItem(KEYS.CTES, JSON.stringify(data));
+
+// MDF-es
+export const getStoredMdfes = (): MdfeDocumento[] => {
+  const data = localStorage.getItem(KEYS.MDFES);
+  if (!data) {
+    localStorage.setItem(KEYS.MDFES, JSON.stringify(INITIAL_MDFES));
+    return INITIAL_MDFES;
+  }
+  try { return JSON.parse(data); } catch { return INITIAL_MDFES; }
+};
+export const saveStoredMdfes = (data: MdfeDocumento[]) => localStorage.setItem(KEYS.MDFES, JSON.stringify(data));
+
+// Empresa Fiscal Config
+export const getStoredEmpresaFiscal = (): EmpresaFiscalConfig => {
+  const data = localStorage.getItem(KEYS.EMPRESA_FISCAL);
+  if (!data) {
+    localStorage.setItem(KEYS.EMPRESA_FISCAL, JSON.stringify(INITIAL_EMPRESA_FISCAL));
+    return INITIAL_EMPRESA_FISCAL;
+  }
+  try { return JSON.parse(data); } catch { return INITIAL_EMPRESA_FISCAL; }
+};
+export const saveStoredEmpresaFiscal = (data: EmpresaFiscalConfig) => localStorage.setItem(KEYS.EMPRESA_FISCAL, JSON.stringify(data));

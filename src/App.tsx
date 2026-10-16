@@ -11,7 +11,10 @@ import {
   Abastecimento,
   StatusViagem,
   StatusMTR,
-  StatusVeiculo
+  StatusVeiculo,
+  CteDocumento,
+  MdfeDocumento,
+  EmpresaFiscalConfig,
 } from './types';
 
 import {
@@ -33,6 +36,12 @@ import {
   saveStoredChecklists,
   getStoredAbastecimentos,
   saveStoredAbastecimentos,
+  getStoredCtes,
+  saveStoredCtes,
+  getStoredMdfes,
+  saveStoredMdfes,
+  getStoredEmpresaFiscal,
+  saveStoredEmpresaFiscal,
 } from './utils/storage';
 
 import { getSupabaseCredentials, getSupabaseClient } from './services/supabase';
@@ -52,6 +61,7 @@ import { EsgKpiView } from './components/EsgKpiView';
 import { ImportadorView } from './components/ImportadorView';
 import { CalculadoraFreteView } from './components/CalculadoraFreteView';
 import { RelatorioView } from './components/RelatorioView';
+import { PortalFiscalView } from './components/PortalFiscalView';
 import { SupabaseAuthModal } from './components/SupabaseAuthModal';
 
 export const App: React.FC = () => {
@@ -69,6 +79,9 @@ export const App: React.FC = () => {
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
   const [checklists, setChecklists] = useState<ChecklistDiario[]>([]);
   const [abastecimentos, setAbastecimentos] = useState<Abastecimento[]>([]);
+  const [ctes, setCtes] = useState<CteDocumento[]>([]);
+  const [mdfes, setMdfes] = useState<MdfeDocumento[]>([]);
+  const [empresaFiscal, setEmpresaFiscal] = useState<EmpresaFiscalConfig>(getStoredEmpresaFiscal());
   const [loaded, setLoaded] = useState(false);
 
   // Initial Load
@@ -85,6 +98,9 @@ export const App: React.FC = () => {
     setManutencoes(getStoredManutencoes());
     setChecklists(getStoredChecklists());
     setAbastecimentos(getStoredAbastecimentos());
+    setCtes(getStoredCtes());
+    setMdfes(getStoredMdfes());
+    setEmpresaFiscal(getStoredEmpresaFiscal());
     setLoaded(true);
 
     // If Supabase is connected, try to sync from cloud
@@ -132,6 +148,9 @@ export const App: React.FC = () => {
   useEffect(() => { if (loaded) saveStoredManutencoes(manutencoes); }, [manutencoes, loaded]);
   useEffect(() => { if (loaded) saveStoredChecklists(checklists); }, [checklists, loaded]);
   useEffect(() => { if (loaded) saveStoredAbastecimentos(abastecimentos); }, [abastecimentos, loaded]);
+  useEffect(() => { if (loaded) saveStoredCtes(ctes); }, [ctes, loaded]);
+  useEffect(() => { if (loaded) saveStoredMdfes(mdfes); }, [mdfes, loaded]);
+  useEffect(() => { if (loaded) saveStoredEmpresaFiscal(empresaFiscal); }, [empresaFiscal, loaded]);
 
   // Handlers: Viagens
   const handleAddViagem = (newTrip: Viagem) => {
@@ -339,6 +358,27 @@ export const App: React.FC = () => {
     }
   };
 
+  // Handlers: Fiscal
+  const handleAddCte = (newCte: CteDocumento) => {
+    setCtes((prev) => [newCte, ...prev]);
+  };
+
+  const handleUpdateCteStatus = (id: string, status: CteDocumento['status'], motivo?: string) => {
+    setCtes((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status, motivoCancelamento: motivo } : c))
+    );
+  };
+
+  const handleEncerrarMdfe = (id: string) => {
+    setMdfes((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: 'Cancelado' } : m))
+    );
+  };
+
+  const handleUpdateEmpresa = (novaEmpresa: EmpresaFiscalConfig) => {
+    setEmpresaFiscal(novaEmpresa);
+  };
+
   // Refresh
   const handleRefresh = () => {
     setViagens(getStoredViagens());
@@ -350,6 +390,9 @@ export const App: React.FC = () => {
     setManutencoes(getStoredManutencoes());
     setChecklists(getStoredChecklists());
     setAbastecimentos(getStoredAbastecimentos());
+    setCtes(getStoredCtes());
+    setMdfes(getStoredMdfes());
+    setEmpresaFiscal(getStoredEmpresaFiscal());
   };
 
   const ocorrenciasAbertasCount = ocorrencias.filter((o) => o.status !== 'Concluída').length;
@@ -376,6 +419,7 @@ export const App: React.FC = () => {
           viagensCount={viagens.length}
           veiculosCount={veiculos.length}
           manutencoesCount={manutencoesPendentesCount}
+          ctesCount={ctes.length}
           onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
           isSupabaseConnected={isSupabaseConnected}
         />
@@ -482,6 +526,21 @@ export const App: React.FC = () => {
 
           {activeTab === 'calculadora' && (
             <CalculadoraFreteView />
+          )}
+
+          {activeTab === 'fiscal' && (
+            <PortalFiscalView
+              ctes={ctes}
+              mdfes={mdfes}
+              empresa={empresaFiscal}
+              viagens={viagens}
+              veiculos={veiculos}
+              motoristas={motoristas}
+              onAddCte={handleAddCte}
+              onUpdateCteStatus={handleUpdateCteStatus}
+              onEncerrarMdfe={handleEncerrarMdfe}
+              onUpdateEmpresa={handleUpdateEmpresa}
+            />
           )}
 
           {activeTab === 'relatorio' && (

@@ -29,7 +29,8 @@ export type TabType =
   | 'kpis'
   | 'importador'
   | 'calculadora'
-  | 'relatorio';
+  | 'relatorio'
+  | 'fiscal';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -38,6 +39,7 @@ interface SidebarProps {
   viagensCount: number;
   veiculosCount: number;
   manutencoesCount: number;
+  ctesCount: number;
   onOpenSupabaseModal: () => void;
   isSupabaseConnected: boolean;
 }
@@ -49,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   viagensCount,
   veiculosCount,
   manutencoesCount,
+  ctesCount,
   onOpenSupabaseModal,
   isSupabaseConnected,
 }) => {
@@ -63,6 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const complianceItems = [
+    { id: 'fiscal' as TabType, label: 'Emissão CT-e / DACTE / SEFAZ', icon: FileText, badge: ctesCount > 0 ? `${ctesCount}` : 'SEFAZ', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
     { id: 'mtr' as TabType, label: 'Conformidade MTR & SINIR', icon: FileCheck2, badge: null },
     { id: 'ocorrencias' as TabType, label: 'Ocorrências & Resposta 24h', icon: AlertTriangle, badge: ocorrenciasCount > 0 ? ocorrenciasCount : null, badgeColor: 'bg-rose-500/20 text-rose-400 border border-rose-500/40' },
     { id: 'kpis' as TabType, label: 'KPIs Operacionais & ESG', icon: BarChart3, badge: 'ESG', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
