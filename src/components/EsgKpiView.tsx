@@ -73,7 +73,7 @@ export const EsgKpiView: React.FC<EsgKpiViewProps> = ({ viagens }) => {
 
   const circularidadePercent = totalVolumeTon > 0
     ? Math.round((coprocessadoOuReciclado / totalVolumeTon) * 100)
-    : 45;
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -162,19 +162,26 @@ export const EsgKpiView: React.FC<EsgKpiViewProps> = ({ viagens }) => {
         </div>
 
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={fuelChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-              <Tooltip
-                formatter={(val: any) => [`${val} kg CO2e`]}
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
-              />
-              <Bar dataKey="emitido" name="CO2e Emitido (kg)" fill="#ef4444" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="evitado" name="CO2e Evitado / Poupado (kg)" fill="#00a859" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {fuelChartData.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+              <Leaf className="w-8 h-8 text-slate-700 mb-2" />
+              <span>Nenhum dado de viagem ou combustível registrado para gerar gráfico de emissões</span>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={fuelChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <Tooltip
+                  formatter={(val: any) => [`${val} kg CO2e`]}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
+                />
+                <Bar dataKey="emitido" name="CO2e Emitido (kg)" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="evitado" name="CO2e Evitado / Poupado (kg)" fill="#00a859" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 

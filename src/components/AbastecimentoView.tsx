@@ -51,14 +51,14 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
 
   // Form State
   const [formData, setFormData] = useState<Partial<Abastecimento>>({
-    veiculoPlaca: veiculos[0]?.placa || 'ABC-4E21',
-    motoristaNome: motoristas[0]?.nome || 'Carlos Alberto Ferreira',
-    odometroKm: 84600,
-    litrosAbastecidos: 140,
+    veiculoPlaca: veiculos[0]?.placa || '',
+    motoristaNome: motoristas[0]?.nome || '',
+    odometroKm: 0,
+    litrosAbastecidos: 100,
     tipoCombustivel: 'HVO (Diesel Verde)',
-    valorTotal: 924,
-    posto: 'Ponto de Abastecimento Interno Ambipar Paulínia',
-    kmRodadosDesdeUltimo: 399,
+    valorTotal: 0,
+    posto: '',
+    kmRodadosDesdeUltimo: 0,
   });
 
   const filtered = abastecimentos.filter((a) =>
@@ -93,7 +93,7 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
 
   // Calculate actual average km/l
   const motoristaVeiculoList = Object.values(motoristaVeiculoMap).map((item) => {
-    const media = item.totalLitros > 0 && item.totalKm > 0 ? item.totalKm / item.totalLitros : 2.6;
+    const media = item.totalLitros > 0 && item.totalKm > 0 ? item.totalKm / item.totalLitros : 0;
     return {
       ...item,
       mediaKmL: Math.round(media * 100) / 100,
@@ -112,13 +112,13 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
   const totalGastoGeral = abastecimentos.reduce((acc, a) => acc + a.valorTotal, 0);
   const mediaFrotaGeral = motoristaVeiculoList.length > 0
     ? (motoristaVeiculoList.reduce((acc, i) => acc + i.mediaKmL, 0) / motoristaVeiculoList.length).toFixed(2)
-    : '2.65';
+    : '0.00';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const litros = Number(formData.litrosAbastecidos) || 1;
     const kmRodados = Number(formData.kmRodadosDesdeUltimo) || 0;
-    const mediaKmL = kmRodados > 0 && litros > 0 ? Math.round((kmRodados / litros) * 100) / 100 : 2.5;
+    const mediaKmL = kmRodados > 0 && litros > 0 ? Math.round((kmRodados / litros) * 100) / 100 : 0;
 
     const newAba: Abastecimento = {
       id: `aba-${Date.now()}`,
@@ -221,57 +221,65 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {motoristaVeiculoList.map((item, idx) => {
-                const isAltaEficiencia = item.mediaKmL >= 2.6;
-                const isMediaRegular = item.mediaKmL >= 2.3 && item.mediaKmL < 2.6;
+              {motoristaVeiculoList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                    Nenhum abastecimento registrado ainda. Lance os abastecimentos para calcular as médias de consumo de cada condutor e caminhão.
+                  </td>
+                </tr>
+              ) : (
+                motoristaVeiculoList.map((item, idx) => {
+                  const isAltaEficiencia = item.mediaKmL >= 2.6;
+                  const isMediaRegular = item.mediaKmL >= 2.3 && item.mediaKmL < 2.6;
 
-                return (
-                  <tr key={idx} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-ambipar-400">
-                        {item.motorista.charAt(0)}
-                      </div>
-                      <span>{item.motorista}</span>
-                    </td>
+                  return (
+                    <tr key={idx} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-ambipar-400">
+                          {item.motorista.charAt(0)}
+                        </div>
+                        <span>{item.motorista}</span>
+                      </td>
 
-                    <td className="py-3 px-4">
-                      <span className="font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-slate-300 font-semibold">
-                        {item.veiculo}
-                      </span>
-                    </td>
+                      <td className="py-3 px-4">
+                        <span className="font-mono bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-slate-300 font-semibold">
+                          {item.veiculo}
+                        </span>
+                      </td>
 
-                    <td className="py-3 px-4 text-right font-mono text-slate-300">
-                      {formatNumber(item.totalKm, 0)} km
-                    </td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-300">
+                        {formatNumber(item.totalKm, 0)} km
+                      </td>
 
-                    <td className="py-3 px-4 text-right font-mono text-slate-300">
-                      {formatNumber(item.totalLitros, 1)} L
-                    </td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-300">
+                        {formatNumber(item.totalLitros, 1)} L
+                      </td>
 
-                    <td className="py-3 px-4 text-right">
-                      <strong className={`text-sm font-black font-mono ${
-                        isAltaEficiencia ? 'text-emerald-400' : isMediaRegular ? 'text-amber-400' : 'text-rose-400'
-                      }`}>
-                        {item.mediaKmL.toFixed(2)} km/L
-                      </strong>
-                    </td>
+                      <td className="py-3 px-4 text-right">
+                        <strong className={`text-sm font-black font-mono ${
+                          isAltaEficiencia ? 'text-emerald-400' : isMediaRegular ? 'text-amber-400' : 'text-rose-400'
+                        }`}>
+                          {item.mediaKmL.toFixed(2)} km/L
+                        </strong>
+                      </td>
 
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
-                          isAltaEficiencia
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : isMediaRegular
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                        }`}
-                      >
-                        {isAltaEficiencia ? '🌟 Excelente (Econômico)' : isMediaRegular ? '⚠️ Regular' : '🚨 Alto Consumo'}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                            isAltaEficiencia
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : isMediaRegular
+                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                          }`}
+                        >
+                          {isAltaEficiencia ? '🌟 Excelente (Econômico)' : isMediaRegular ? '⚠️ Regular' : '🚨 Alto Consumo'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -285,25 +293,32 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
         </h3>
 
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rankingChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 4.5]} />
-              <Tooltip
-                formatter={(val: any) => [`${val} km/L`, 'Consumo Médio']}
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
-              />
-              <Bar dataKey="media" radius={[6, 6, 0, 0]}>
-                {rankingChartData.map((entry, index) => (
-                  <Cell
-                    key={`bar-${index}`}
-                    fill={entry.media >= 2.6 ? '#00a859' : entry.media >= 2.3 ? '#f59e0b' : '#ef4444'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {rankingChartData.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+              <Fuel className="w-8 h-8 text-slate-700 mb-2" />
+              <span>Nenhum dado de abastecimento para gerar o comparativo</span>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rankingChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 4.5]} />
+                <Tooltip
+                  formatter={(val: any) => [`${val} km/L`, 'Consumo Médio']}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
+                />
+                <Bar dataKey="media" radius={[6, 6, 0, 0]}>
+                  {rankingChartData.map((entry, index) => (
+                    <Cell
+                      key={`bar-${index}`}
+                      fill={entry.media >= 2.6 ? '#00a859' : entry.media >= 2.3 ? '#f59e0b' : '#ef4444'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -329,23 +344,31 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filtered.map((a) => (
-                <tr key={a.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-2.5 px-3 text-slate-400 font-mono">{a.dataHora}</td>
-                  <td className="py-2.5 px-3">
-                    <span className="font-mono font-bold text-white mr-1.5">{a.veiculoPlaca}</span>
-                    <span className="text-slate-300">({a.motoristaNome})</span>
-                  </td>
-                  <td className="py-2.5 px-3 text-emerald-400 font-semibold">{a.tipoCombustivel}</td>
-                  <td className="py-2.5 px-3 text-slate-400 truncate max-w-xs">{a.posto}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-white">{formatNumber(a.odometroKm, 0)} km</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-white">{formatNumber(a.litrosAbastecidos, 1)} L</td>
-                  <td className="py-2.5 px-3 text-right font-bold text-amber-400">{formatCurrency(a.valorTotal)}</td>
-                  <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
-                    {a.mediaKmL ? `${a.mediaKmL.toFixed(2)} km/L` : '-'}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                    Nenhum registro de abastecimento encontrado. Clique em "Lançar Abastecimento" para inserir notas fiscais de combustível.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((a) => (
+                  <tr key={a.id} className="hover:bg-slate-800/40 transition">
+                    <td className="py-2.5 px-3 text-slate-400 font-mono">{a.dataHora}</td>
+                    <td className="py-2.5 px-3">
+                      <span className="font-mono font-bold text-white mr-1.5">{a.veiculoPlaca}</span>
+                      <span className="text-slate-300">({a.motoristaNome})</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-emerald-400 font-semibold">{a.tipoCombustivel}</td>
+                    <td className="py-2.5 px-3 text-slate-400 truncate max-w-xs">{a.posto}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-white">{formatNumber(a.odometroKm, 0)} km</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-white">{formatNumber(a.litrosAbastecidos, 1)} L</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-amber-400">{formatCurrency(a.valorTotal)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                      {a.mediaKmL ? `${a.mediaKmL.toFixed(2)} km/L` : '-'}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

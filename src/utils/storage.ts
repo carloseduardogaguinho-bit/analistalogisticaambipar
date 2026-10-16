@@ -30,18 +30,44 @@ import {
 } from '../data/fiscalData';
 
 const KEYS = {
-  VIAGENS: 'ambipar_logistica_viagens_v1',
-  MTRS: 'ambipar_logistica_mtrs_v1',
-  LICENCAS: 'ambipar_logistica_licencas_v1',
-  OCORRENCIAS: 'ambipar_logistica_ocorrencias_v1',
-  VEICULOS: 'ambipar_logistica_veiculos_v1',
-  MOTORISTAS: 'ambipar_logistica_motoristas_v1',
-  MANUTENCOES: 'ambipar_logistica_manutencoes_v1',
-  CHECKLISTS: 'ambipar_logistica_checklists_v1',
-  ABASTECIMENTOS: 'ambipar_logistica_abastecimentos_v1',
-  CTES: 'ambipar_logistica_ctes_v1',
-  MDFES: 'ambipar_logistica_mdfes_v1',
-  EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v1',
+  VIAGENS: 'ambipar_logistica_viagens_v2',
+  MTRS: 'ambipar_logistica_mtrs_v2',
+  LICENCAS: 'ambipar_logistica_licencas_v2',
+  OCORRENCIAS: 'ambipar_logistica_ocorrencias_v2',
+  VEICULOS: 'ambipar_logistica_veiculos_v2',
+  MOTORISTAS: 'ambipar_logistica_motoristas_v2',
+  MANUTENCOES: 'ambipar_logistica_manutencoes_v2',
+  CHECKLISTS: 'ambipar_logistica_checklists_v2',
+  ABASTECIMENTOS: 'ambipar_logistica_abastecimentos_v2',
+  CTES: 'ambipar_logistica_ctes_v2',
+  MDFES: 'ambipar_logistica_mdfes_v2',
+  EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v2',
+};
+
+// Limpa automaticamente dados de versões anteriores com dados fictícios
+try {
+  const legacyKeys = [
+    'ambipar_logistica_viagens_v1',
+    'ambipar_logistica_mtrs_v1',
+    'ambipar_logistica_licencas_v1',
+    'ambipar_logistica_ocorrencias_v1',
+    'ambipar_logistica_veiculos_v1',
+    'ambipar_logistica_motoristas_v1',
+    'ambipar_logistica_manutencoes_v1',
+    'ambipar_logistica_checklists_v1',
+    'ambipar_logistica_abastecimentos_v1',
+    'ambipar_logistica_ctes_v1',
+    'ambipar_logistica_mdfes_v1',
+    'ambipar_logistica_empresa_fiscal_v1',
+  ];
+  legacyKeys.forEach((key) => localStorage.removeItem(key));
+} catch {
+  // Ignora se localStorage não estiver disponível
+}
+
+export const clearAllStoredData = () => {
+  Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  window.location.reload();
 };
 
 // Viagens

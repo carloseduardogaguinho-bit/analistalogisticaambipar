@@ -43,11 +43,11 @@ export const ManutencaoView: React.FC<ManutencaoViewProps> = ({
 
   // Form State
   const [formData, setFormData] = useState<Partial<Manutencao>>({
-    veiculoPlaca: veiculos[0]?.placa || 'ABC-4E21',
+    veiculoPlaca: veiculos[0]?.placa || '',
     tipo: 'Preventiva Programada',
     descricao: '',
-    kmNoMomento: 85000,
-    kmProximaRevisao: 95000,
+    kmNoMomento: 50000,
+    kmProximaRevisao: 60000,
     dataEntrada: new Date().toISOString().slice(0, 10),
     dataPrevisaoSaida: new Date(Date.now() + 2 * 86400 * 1000).toISOString().slice(0, 10),
     oficina: 'Oficina Central Ambipar',
@@ -145,7 +145,11 @@ export const ManutencaoView: React.FC<ManutencaoViewProps> = ({
             <span>Confiabilidade Mecânica</span>
             <CheckCircle2 className="w-4 h-4 text-ambipar-400" />
           </div>
-          <div className="text-2xl font-black text-ambipar-400">97.8%</div>
+          <div className="text-2xl font-black text-ambipar-400">
+            {veiculos.length > 0
+              ? `${(Math.round(((veiculos.length - emExecucaoCount) / veiculos.length) * 1000) / 10).toFixed(1)}%`
+              : '100%'}
+          </div>
           <div className="text-[11px] text-slate-500">Disponibilidade operacional acima da meta</div>
         </div>
       </div>
@@ -182,7 +186,23 @@ export const ManutencaoView: React.FC<ManutencaoViewProps> = ({
 
       {/* Maintenance Cards / List */}
       <div className="space-y-3">
-        {filtered.map((m) => {
+        {filtered.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800">
+            <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Nenhuma ordem de serviço cadastrada</h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+              Abra ordens de serviços preventivos ou corretivos para acompanhar os custos de oficina e a disponibilidade dos veículos.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs inline-flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Agendar Primeira Manutenção
+            </button>
+          </div>
+        ) : (
+          filtered.map((m) => {
           return (
             <div
               key={m.id}
@@ -249,7 +269,7 @@ export const ManutencaoView: React.FC<ManutencaoViewProps> = ({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Modal Nova Manutenção */}

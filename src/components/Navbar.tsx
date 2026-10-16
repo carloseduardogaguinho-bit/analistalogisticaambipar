@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, ShieldCheck, RefreshCw, GitBranch, Bell, Database } from 'lucide-react';
+import { Truck, ShieldCheck, RefreshCw, GitBranch, Bell, Database, Trash2 } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -71,6 +71,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
         >
           <RefreshCw className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => {
+            if (confirm('Deseja limpar todos os dados locais e reiniciar o sistema totalmente limpo?')) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          title="Limpar todos os dados locais e reiniciar limpo"
+          className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition"
+        >
+          <Trash2 className="w-4 h-4" />
         </button>
 
         {ocorrenciasCount > 0 && (

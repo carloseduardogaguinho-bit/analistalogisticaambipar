@@ -31,7 +31,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({
 
   const concluidas = viagens.filter((v) => v.status === 'Concluída').length;
   const atrasadas = viagens.filter((v) => v.status === 'Atrasada').length;
-  const otifPercent = concluidas + atrasadas > 0 ? Math.round((concluidas / (concluidas + atrasadas)) * 100) : 92;
+  const otifPercent = concluidas + atrasadas > 0 ? Math.round((concluidas / (concluidas + atrasadas)) * 100) : 100;
 
   let totalCo2Evitado = 0;
   viagens.forEach((v) => {
@@ -147,17 +147,25 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 print:divide-slate-300">
-              {viagens.map((v) => (
-                <tr key={v.id}>
-                  <td className="py-2 px-3 font-mono font-bold text-white print:text-black">{v.codigoViagem}</td>
-                  <td className="py-2 px-3 text-slate-300 print:text-slate-800">{v.cliente}</td>
-                  <td className="py-2 px-3 text-slate-400 print:text-slate-600">{v.origem} &rarr; {v.destino}</td>
-                  <td className="py-2 px-3 text-slate-300 print:text-slate-800">{v.placaCavalo} ({v.tipoEquipamento})</td>
-                  <td className="py-2 px-3 font-mono text-ambipar-400 print:text-ambipar-700">{v.numeroMTR}</td>
-                  <td className="py-2 px-3 text-right font-bold text-white print:text-black">{formatNumber(v.pesoToneladas)} t</td>
-                  <td className="py-2 px-3 text-center text-slate-300 print:text-slate-800">{v.status}</td>
+              {viagens.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-slate-500 print:text-slate-600">
+                    Nenhuma operação cadastrada no período.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                viagens.map((v) => (
+                  <tr key={v.id}>
+                    <td className="py-2 px-3 font-mono font-bold text-white print:text-black">{v.codigoViagem}</td>
+                    <td className="py-2 px-3 text-slate-300 print:text-slate-800">{v.cliente}</td>
+                    <td className="py-2 px-3 text-slate-400 print:text-slate-600">{v.origem} &rarr; {v.destino}</td>
+                    <td className="py-2 px-3 text-slate-300 print:text-slate-800">{v.placaCavalo} ({v.tipoEquipamento})</td>
+                    <td className="py-2 px-3 font-mono text-ambipar-400 print:text-ambipar-700">{v.numeroMTR}</td>
+                    <td className="py-2 px-3 text-right font-bold text-white print:text-black">{formatNumber(v.pesoToneladas)} t</td>
+                    <td className="py-2 px-3 text-center text-slate-300 print:text-slate-800">{v.status}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

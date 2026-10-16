@@ -121,7 +121,23 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
       {/* Ocorrencias Cards */}
       <div className="grid grid-cols-1 gap-4">
-        {filtered.map((item) => {
+        {filtered.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800">
+            <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Nenhuma ocorrência registrada</h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+              Operação rodando com 100% de conformidade. Caso ocorra algum incidente mecânico, atraso em janela ou não-conformidade, registre aqui para acompanhamento da Torre de Controle.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs inline-flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Registrar Ocorrência
+            </button>
+          </div>
+        ) : (
+          filtered.map((item) => {
           const badge = getStatusColor(item.severidade);
           return (
             <div
@@ -178,7 +194,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Modal Nova Ocorrencia */}

@@ -32,9 +32,9 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 
   // Form State
   const [formData, setFormData] = useState<Partial<ChecklistDiario>>({
-    veiculoPlaca: veiculos[0]?.placa || 'ABC-4E21',
-    motoristaNome: motoristas[0]?.nome || 'Carlos Alberto Ferreira',
-    kmInicial: 84200,
+    veiculoPlaca: veiculos[0]?.placa || '',
+    motoristaNome: motoristas[0]?.nome || '',
+    kmInicial: 50000,
     tipoInspecao: 'Saída para Viagem',
     pneusPressaoEEstado: true,
     freiosEstacionamentoEServico: true,
@@ -143,7 +143,23 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 
       {/* Checklist History Cards */}
       <div className="space-y-3">
-        {filtered.map((c) => {
+        {filtered.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800">
+            <CheckCircle2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-white mb-1">Nenhum checklist registrado</h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+              Realize a inspeção pré-viagem diária de segurança (pneus, freios, vazamentos e kit de emergência Ambipar Response) antes do despacho.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs inline-flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Realizar Primeiro Checklist
+            </button>
+          </div>
+        ) : (
+          filtered.map((c) => {
           const isAprovado = c.resultado === 'Aprovado - Liberado';
           const isBloqueado = c.resultado === 'Reprovado - Bloqueado';
 
@@ -219,7 +235,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               )}
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Modal Realizar Checklist */}

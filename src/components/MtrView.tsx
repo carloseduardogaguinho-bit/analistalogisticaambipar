@@ -181,72 +181,80 @@ export const MtrView: React.FC<MtrViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filteredMtrs.map((m) => {
-                const badge = getStatusColor(m.status);
-                return (
-                  <tr key={m.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4">
-                      <div className="font-mono font-bold text-white">{m.numeroMTR}</div>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 inline-block mt-0.5">
-                        {m.sistemaEmissor}
-                      </span>
-                    </td>
+              {filteredMtrs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                    Nenhum manifesto MTR cadastrado. Clique em "Emitir / Registrar MTR" para vincular documentos ambientais.
+                  </td>
+                </tr>
+              ) : (
+                filteredMtrs.map((m) => {
+                  const badge = getStatusColor(m.status);
+                  return (
+                    <tr key={m.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4">
+                        <div className="font-mono font-bold text-white">{m.numeroMTR}</div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 inline-block mt-0.5">
+                          {m.sistemaEmissor}
+                        </span>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-slate-200 font-medium max-w-[200px] truncate">
-                      {m.gerador}
-                    </td>
+                      <td className="py-3.5 px-4 text-slate-200 font-medium max-w-[200px] truncate">
+                        {m.gerador}
+                      </td>
 
-                    <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">
-                      {m.destinador}
-                    </td>
+                      <td className="py-3.5 px-4 text-slate-300 max-w-[200px] truncate">
+                        {m.destinador}
+                      </td>
 
-                    <td className="py-3.5 px-4 max-w-[240px]">
-                      <div className="font-mono text-[11px] text-ambipar-400 font-semibold">{m.codigoIbama}</div>
-                      <div className="text-[11px] text-slate-400 truncate">{m.descricaoResiduo}</div>
-                    </td>
+                      <td className="py-3.5 px-4 max-w-[240px]">
+                        <div className="font-mono text-[11px] text-ambipar-400 font-semibold">{m.codigoIbama}</div>
+                        <div className="text-[11px] text-slate-400 truncate">{m.descricaoResiduo}</div>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-right font-bold text-white">
-                      {formatNumber(m.quantidadeTon)} t
-                    </td>
+                      <td className="py-3.5 px-4 text-right font-bold text-white">
+                        {formatNumber(m.quantidadeTon)} t
+                      </td>
 
-                    <td className="py-3.5 px-4">
-                      {m.numeroCDF ? (
-                        <div className="flex items-center gap-1 text-emerald-400 font-mono text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>{m.numeroCDF}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-500 italic">Pendente descarga</span>
-                      )}
-                    </td>
+                      <td className="py-3.5 px-4">
+                        {m.numeroCDF ? (
+                          <div className="flex items-center gap-1 text-emerald-400 font-mono text-[11px]">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{m.numeroCDF}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 italic">Pendente descarga</span>
+                        )}
+                      </td>
 
-                    <td className="py-3.5 px-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`}></span>
-                        {m.status}
-                      </span>
-                    </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`}></span>
+                          {m.status}
+                        </span>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-center">
-                      {m.status !== 'CDF Gerado' ? (
-                        <button
-                          onClick={() => {
-                            const cdfNum = prompt('Digite o número do CDF gerado pelo destinador:', `CDF-AMB-2026-${Math.floor(1000 + Math.random() * 9000)}`);
-                            if (cdfNum) {
-                              onUpdateMtrStatus(m.id, 'CDF Gerado', cdfNum);
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold transition"
-                        >
-                          Baixar CDF
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-emerald-400 font-semibold">100% Conforme</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-3.5 px-4 text-center">
+                        {m.status !== 'CDF Gerado' ? (
+                          <button
+                            onClick={() => {
+                              const cdfNum = prompt('Digite o número do CDF gerado pelo destinador:', `CDF-AMB-2026-${Math.floor(1000 + Math.random() * 9000)}`);
+                              if (cdfNum) {
+                                onUpdateMtrStatus(m.id, 'CDF Gerado', cdfNum);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold transition"
+                          >
+                            Baixar CDF
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-emerald-400 font-semibold">100% Conforme</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -265,25 +273,31 @@ export const MtrView: React.FC<MtrViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {licencas.map((lic) => {
-            const badge = getStatusColor(lic.status);
-            return (
-              <div key={lic.id} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-white text-xs">{lic.placa}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
-                    {lic.status}
-                  </span>
+          {licencas.length === 0 ? (
+            <div className="col-span-full p-8 text-center text-slate-500 bg-slate-950/40 rounded-xl">
+              Nenhuma licença ambiental ou certificado CIPP registrado no momento.
+            </div>
+          ) : (
+            licencas.map((lic) => {
+              const badge = getStatusColor(lic.status);
+              return (
+                <div key={lic.id} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-white text-xs">{lic.placa}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                      {lic.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-300 font-medium">{lic.tipoDocumento}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">Reg: {lic.numeroCertificado}</div>
+                  <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800 flex items-center justify-between">
+                    <span>Vencimento:</span>
+                    <strong className="text-white">{lic.dataValidade}</strong>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-300 font-medium">{lic.tipoDocumento}</div>
-                <div className="text-[10px] text-slate-500 font-mono">Reg: {lic.numeroCertificado}</div>
-                <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800 flex items-center justify-between">
-                  <span>Vencimento:</span>
-                  <strong className="text-white">{lic.dataValidade}</strong>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 

@@ -178,8 +178,24 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
       </div>
 
       {/* Vehicles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((v) => {
+      {filtered.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800">
+          <Truck className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-white mb-1">Nenhum veículo cadastrado na frota</h3>
+          <p className="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+            Cadastre os cavalos mecânicos, carretas tanques, implementos roll-on e poliguindastes da Ambipar para iniciar a gestão de frota.
+          </p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs inline-flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Cadastrar Primeiro Veículo
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((v) => {
           const kmParaRevisao = v.proximaRevisaoKm - v.odometroAtualKm;
           const alertaRevisao = kmParaRevisao <= 3000;
 
@@ -268,7 +284,8 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Modal Novo Veículo */}
       {isModalOpen && (

@@ -65,7 +65,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const viagensFinalizadasOuAtrasadas = viagensConcluidas + viagensAtrasadas;
   const otifPercent = viagensFinalizadasOuAtrasadas > 0
     ? Math.round((viagensConcluidas / viagensFinalizadasOuAtrasadas) * 100)
-    : 92;
+    : 100;
 
   // Waste category aggregation for Pie Chart
   const wasteCategoryMap: Record<string, number> = {};
@@ -262,20 +262,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statusCounts}>
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
-                />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {statusCounts.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {totalViagens === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+                <Truck className="w-8 h-8 text-slate-700 mb-2" />
+                <span>Nenhuma viagem despachada para exibir status</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusCounts}>
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
+                  />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    {statusCounts.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -290,31 +297,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={wasteData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {wasteData.map((_, index) => (
-                    <Cell key={`pie-cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any) => [`${value} Ton`, 'Peso']}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {wasteData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+                <Scale className="w-8 h-8 text-slate-700 mb-2" />
+                <span>Nenhuma carga registrada para exibir distribuição</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={wasteData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {wasteData.map((_, index) => (
+                      <Cell key={`pie-cell-${index}`} fill={COLORS_PIE[index % COLORS_PIE.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any) => [`${value} Ton`, 'Peso']}
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -349,42 +363,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
-              {viagens.slice(0, 5).map((v) => {
-                const badge = getStatusColor(v.status);
-                return (
-                  <tr key={v.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3 px-3 font-mono font-bold text-white">
-                      {v.codigoViagem}
-                    </td>
-                    <td className="py-3 px-3 text-slate-200">
-                      {v.cliente}
-                    </td>
-                    <td className="py-3 px-3 text-slate-400">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-ambipar-400 shrink-0" />
-                        <span>{v.origem} &rarr; {v.destino}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 text-slate-300">
-                      <div>{v.tipoEquipamento}</div>
-                      <span className="font-mono text-[10px] text-slate-500">{v.placaCavalo}</span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="text-slate-300 block">{v.classeResiduo.split('-')[0]}</span>
-                      <span className="font-mono text-[10px] text-ambipar-400">{v.numeroMTR}</span>
-                    </td>
-                    <td className="py-3 px-3 text-right font-bold text-white">
-                      {formatNumber(v.pesoToneladas)} t
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`}></span>
-                        {v.status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {viagens.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-500">
+                    Nenhuma viagem registrada no momento. Clique em "Gerenciar Viagens" para cadastrar a primeira carga operacional.
+                  </td>
+                </tr>
+              ) : (
+                viagens.slice(0, 5).map((v) => {
+                  const badge = getStatusColor(v.status);
+                  return (
+                    <tr key={v.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3 px-3 font-mono font-bold text-white">
+                        {v.codigoViagem}
+                      </td>
+                      <td className="py-3 px-3 text-slate-200">
+                        {v.cliente}
+                      </td>
+                      <td className="py-3 px-3 text-slate-400">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-ambipar-400 shrink-0" />
+                          <span>{v.origem} &rarr; {v.destino}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-slate-300">
+                        <div>{v.tipoEquipamento}</div>
+                        <span className="font-mono text-[10px] text-slate-500">{v.placaCavalo}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="text-slate-300 block">{v.classeResiduo.split('-')[0]}</span>
+                        <span className="font-mono text-[10px] text-ambipar-400">{v.numeroMTR}</span>
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-white">
+                        {formatNumber(v.pesoToneladas)} t
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`}></span>
+                          {v.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

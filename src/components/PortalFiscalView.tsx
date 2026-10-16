@@ -248,9 +248,16 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-medium">
-                  {filteredCtes.map((c) => {
-                    const isAutorizado = c.status === 'Autorizado';
-                    const isCancelado = c.status === 'Cancelado';
+                  {filteredCtes.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">
+                        Nenhum Conhecimento de Transporte (CT-e) emitido. Clique em "Emitir Novo CT-e" para iniciar o faturamento fiscal.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCtes.map((c) => {
+                      const isAutorizado = c.status === 'Autorizado';
+                      const isCancelado = c.status === 'Cancelado';
 
                     return (
                       <tr key={c.id} className="hover:bg-slate-800/40 transition">
@@ -334,7 +341,8 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
                 </tbody>
               </table>
             </div>
@@ -367,55 +375,63 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-medium">
-                  {filteredMdfes.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-white block">Nº {m.numeroMdfe}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">Série {m.serie}</span>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <div className="text-white font-semibold">{m.ufCarregamento} &rarr; {m.ufDescarregamento}</div>
-                        <div className="text-[10px] text-slate-400">{m.municipioCarregamento} &rarr; {m.municipioDescarregamento}</div>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-white">{m.placaVeiculo}</div>
-                        <div className="text-[10px] text-slate-400">{m.motoristaNome}</div>
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-mono text-white">
-                        {formatNumber(m.pesoBrutoTotalKg / 1000, 1)} t
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-bold text-emerald-400">
-                        {formatCurrency(m.valorTotalCargas)}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                          {m.status}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        {m.status === 'Autorizado' ? (
-                          <button
-                            onClick={() => {
-                              if (confirm(`Deseja encerrar o MDF-e nº ${m.numeroMdfe} na SEFAZ?`)) {
-                                onEncerrarMdfe(m.id);
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-[11px] font-semibold transition"
-                          >
-                            Encerrar Manifesto
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-500">Encerrado</span>
-                        )}
+                  {filteredMdfes.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">
+                        Nenhum Manifesto Eletrônico (MDF-e) emitido.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredMdfes.map((m) => (
+                      <tr key={m.id} className="hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-4">
+                          <span className="font-mono font-bold text-white block">Nº {m.numeroMdfe}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">Série {m.serie}</span>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="text-white font-semibold">{m.ufCarregamento} &rarr; {m.ufDescarregamento}</div>
+                          <div className="text-[10px] text-slate-400">{m.municipioCarregamento} &rarr; {m.municipioDescarregamento}</div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="font-mono font-bold text-white">{m.placaVeiculo}</div>
+                          <div className="text-[10px] text-slate-400">{m.motoristaNome}</div>
+                        </td>
+
+                        <td className="py-3 px-4 text-right font-mono text-white">
+                          {formatNumber(m.pesoBrutoTotalKg / 1000, 1)} t
+                        </td>
+
+                        <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                          {formatCurrency(m.valorTotalCargas)}
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                            {m.status}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 text-center">
+                          {m.status === 'Autorizado' ? (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Deseja encerrar o MDF-e nº ${m.numeroMdfe} na SEFAZ?`)) {
+                                  onEncerrarMdfe(m.id);
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 text-[11px] font-semibold transition"
+                            >
+                              Encerrar Manifesto
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-500">Encerrado</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
