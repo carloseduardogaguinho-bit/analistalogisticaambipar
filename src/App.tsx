@@ -43,6 +43,7 @@ import {
   getStoredEmpresaFiscal,
   saveStoredEmpresaFiscal,
 } from './utils/storage';
+import { ParsedSefazXml } from './utils/sebraeUtils';
 
 import { getSupabaseCredentials, getSupabaseClient } from './services/supabase';
 
@@ -383,6 +384,48 @@ export const App: React.FC = () => {
     setEmpresaFiscal(novaEmpresa);
   };
 
+  const handleSincronizarRetornoSefaz = (parsedDocs: ParsedSefazXml[]) => {
+    let countCte = 0;
+    let countMdfe = 0;
+
+    setCtes((prev) =>
+      prev.map((c) => {
+        const found = parsedDocs.find(
+          (d) => d.tipo === 'cte' && (d.chaveAcesso === c.chaveAcesso || d.numeroDoc === c.numeroCte)
+        );
+        if (found) {
+          countCte++;
+          return {
+            ...c,
+            status: 'Autorizado',
+            protocoloAutorizacao: found.protocoloAutorizacao || c.protocoloAutorizacao,
+            dataAutorizacao: found.dataAutorizacao || c.dataAutorizacao,
+          };
+        }
+        return c;
+      })
+    );
+
+    setMdfes((prev) =>
+      prev.map((m) => {
+        const found = parsedDocs.find(
+          (d) => d.tipo === 'mdfe' && (d.chaveAcesso === m.chaveAcesso || d.numeroDoc === m.numeroMdfe)
+        );
+        if (found) {
+          countMdfe++;
+          return {
+            ...m,
+            status: 'Autorizado',
+            protocoloAutorizacao: found.protocoloAutorizacao || m.protocoloAutorizacao,
+          };
+        }
+        return m;
+      })
+    );
+
+    alert(`Sincronização com o SEBRAE/SEFAZ realizada com sucesso!\n${countCte} CT-e(s) e ${countMdfe} MDF-e(s) atualizados com protocolos oficiais da SEFAZ.`);
+  };
+
   // Refresh
   const handleRefresh = () => {
     setViagens(getStoredViagens());
@@ -545,6 +588,7 @@ export const App: React.FC = () => {
               onUpdateCteStatus={handleUpdateCteStatus}
               onEncerrarMdfe={handleEncerrarMdfe}
               onUpdateEmpresa={handleUpdateEmpresa}
+              onSincronizarRetornoSefaz={handleSincronizarRetornoSefaz}
             />
           )}
 

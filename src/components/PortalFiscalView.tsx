@@ -21,7 +21,8 @@ import {
   Wifi,
   Activity,
   RefreshCw,
-  FileCheck
+  FileCheck,
+  FileArchive
 } from 'lucide-react';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import { formatarChaveAcesso, formatarCnpj, gerarXmlCte, gerarXmlMdfe, testarConexaoSefaz, SefazStatusResponse } from '../utils/fiscalUtils';
@@ -29,6 +30,8 @@ import { DacteModal } from './DacteModal';
 import { DamdfeModal } from './DamdfeModal';
 import { EmissaoCteModal } from './EmissaoCteModal';
 import { EmissaoMdfeModal } from './EmissaoMdfeModal';
+import { SebraeHubModal } from './SebraeHubModal';
+import { ParsedSefazXml } from '../utils/sebraeUtils';
 
 interface PortalFiscalViewProps {
   ctes: CteDocumento[];
@@ -42,6 +45,7 @@ interface PortalFiscalViewProps {
   onUpdateCteStatus: (id: string, status: CteDocumento['status'], motivo?: string) => void;
   onEncerrarMdfe: (id: string) => void;
   onUpdateEmpresa: (empresa: EmpresaFiscalConfig) => void;
+  onSincronizarRetornoSefaz?: (parsedDocs: ParsedSefazXml[]) => void;
 }
 
 export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
@@ -56,6 +60,7 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
   onUpdateCteStatus,
   onEncerrarMdfe,
   onUpdateEmpresa,
+  onSincronizarRetornoSefaz,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'cte' | 'mdfe' | 'config'>('cte');
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +68,7 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
   const [selectedMdfeForDamdfe, setSelectedMdfeForDamdfe] = useState<MdfeDocumento | null>(null);
   const [isEmissaoModalOpen, setIsEmissaoModalOpen] = useState(false);
   const [isEmissaoMdfeModalOpen, setIsEmissaoMdfeModalOpen] = useState(false);
+  const [isSebraeModalOpen, setIsSebraeModalOpen] = useState(false);
   const [empresaForm, setEmpresaForm] = useState<EmpresaFiscalConfig>(empresa);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [sefazStatus, setSefazStatus] = useState<SefazStatusResponse | null>(null);
@@ -149,7 +155,15 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsSebraeModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/40 font-bold text-xs flex items-center gap-2 transition shadow-lg shadow-amber-500/10"
+          >
+            <FileArchive className="w-4 h-4" />
+            <span>Central Emissor SEBRAE (Custo Zero)</span>
+          </button>
+
           <button
             onClick={() => setIsEmissaoModalOpen(true)}
             className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/20 transition"
@@ -843,6 +857,16 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
         veiculos={veiculos}
         motoristas={motoristas}
         onEmitirMdfe={onAddMdfe}
+      />
+
+      {/* Central Emissor SEBRAE Hub Modal */}
+      <SebraeHubModal
+        isOpen={isSebraeModalOpen}
+        onClose={() => setIsSebraeModalOpen(false)}
+        ctes={ctes}
+        mdfes={mdfes}
+        empresa={empresa}
+        onSincronizarRetorno={onSincronizarRetornoSefaz || (() => {})}
       />
     </div>
   );
