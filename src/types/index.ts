@@ -210,7 +210,8 @@ export type StatusDocumentoFiscal =
   | 'Em Processamento'
   | 'Cancelado'
   | 'Rejeitado'
-  | 'Rascunho';
+  | 'Rascunho'
+  | 'Encerrado';
 
 export interface CteDocumento {
   id: string;
@@ -316,4 +317,5 @@ export interface EmpresaFiscalConfig {
   certificadoValidade: string;
   certificadoStatus: 'Válido' | 'Pendente' | 'Expirado';
   provedorConexao: 'Sefaz Direta (Web Services)' | 'Focus NFe' | 'Nuvem Fiscal' | 'SpeedGov';
+  apiTokenGateway?: string;
 }

@@ -363,6 +363,10 @@ export const App: React.FC = () => {
     setCtes((prev) => [newCte, ...prev]);
   };
 
+  const handleAddMdfe = (newMdfe: MdfeDocumento) => {
+    setMdfes((prev) => [newMdfe, ...prev]);
+  };
+
   const handleUpdateCteStatus = (id: string, status: CteDocumento['status'], motivo?: string) => {
     setCtes((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status, motivoCancelamento: motivo } : c))
@@ -371,7 +375,7 @@ export const App: React.FC = () => {
 
   const handleEncerrarMdfe = (id: string) => {
     setMdfes((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'Cancelado' } : m))
+      prev.map((m) => (m.id === id ? { ...m, status: 'Encerrado' } : m))
     );
   };
 
@@ -537,6 +541,7 @@ export const App: React.FC = () => {
               veiculos={veiculos}
               motoristas={motoristas}
               onAddCte={handleAddCte}
+              onAddMdfe={handleAddMdfe}
               onUpdateCteStatus={handleUpdateCteStatus}
               onEncerrarMdfe={handleEncerrarMdfe}
               onUpdateEmpresa={handleUpdateEmpresa}
