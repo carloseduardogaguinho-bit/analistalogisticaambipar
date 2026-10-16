@@ -98,16 +98,105 @@ export interface Ocorrencia {
   responsavelTratativa: string;
 }
 
-export interface KpiSummary {
-  totalViagens: number;
-  viagensEmTransito: number;
-  viagensConcluidasHoje: number;
-  viagensAtrasadas: number;
-  otifPercent: number;
-  volumeTotalTon: number;
-  custoMedioPorKm: number;
-  co2EmitidoKg: number;
-  co2EvitadoKg: number;
-  mtrsPendentes: number;
-  ocorrenciasAbertas: number;
+/* =========================================================
+   NOVOS MÓDULOS DE FROTA, MOTORISTAS, MANUTENÇÃO & SUPABASE
+   ========================================================= */
+
+export type StatusVeiculo = 'Disponível' | 'Em Viagem' | 'Em Manutenção' | 'Inativo';
+
+export interface Veiculo {
+  id: string;
+  placa: string;
+  modelo: string;
+  marca: string;
+  ano: number;
+  tipoEquipamento: TipoEquipamento;
+  baseOperacional: string;
+  odometroAtualKm: number;
+  capacidadeCargaTon: number;
+  status: StatusVeiculo;
+  proximaRevisaoKm: number;
+  dataUltimaRevisao?: string;
+  tipoCombustivelPadrao: TipoCombustivel;
+}
+
+export interface Motorista {
+  id: string;
+  nome: string;
+  cpf: string;
+  cnh: string;
+  categoriaCnh: 'D' | 'E';
+  validadeCnh: string;
+  validadeMopp: string; // Curso MOPP Produtos Perigosos
+  validadeToxico: string; // Exame Toxicológico
+  baseOperacional: string;
+  veiculoFixoPlaca?: string;
+  status: 'Ativo' | 'Em Férias' | 'Afastado';
+  mediaConsumoGeral?: number; // km/litro
+  viagensRealizadasCount?: number;
+}
+
+export type TipoManutencao =
+  | 'Preventiva Programada'
+  | 'Corretiva Emergencial'
+  | 'Revisão de Pneus'
+  | 'Inspeção Tanque / CIV'
+  | 'Troca de Óleo e Filtros'
+  | 'Sistema de Freios';
+
+export type StatusManutencao = 'Agendada' | 'Em Execução' | 'Concluída' | 'Cancelada';
+
+export interface Manutencao {
+  id: string;
+  veiculoPlaca: string;
+  tipo: TipoManutencao;
+  descricao: string;
+  kmNoMomento: number;
+  kmProximaRevisao?: number;
+  dataEntrada: string;
+  dataPrevisaoSaida?: string;
+  dataConclusao?: string;
+  oficina: string;
+  custoTotal: number;
+  status: StatusManutencao;
+  responsavelAprovacao: string;
+}
+
+export interface ChecklistDiario {
+  id: string;
+  dataHora: string;
+  veiculoPlaca: string;
+  motoristaNome: string;
+  kmInicial: number;
+  tipoInspecao: 'Saída para Viagem' | 'Retorno à Base';
+  pneusPressaoEEstado: boolean;
+  freiosEstacionamentoEServico: boolean;
+  luzesESinalizacao: boolean;
+  extintoresPQSValidade: boolean;
+  kitEmergenciaAmbipar: boolean; // Mantas, cones, fita, pá antichispa, EPI químico
+  vazamentoFluidos: boolean; // True = Sem vazamento (OK)
+  documentacaoMTRCIVCIPP: boolean;
+  tacografoDiscoOuDigital: boolean;
+  resultado: 'Aprovado - Liberado' | 'Aprovado com Restrição Leve' | 'Reprovado - Bloqueado';
+  observacoes?: string;
+}
+
+export interface Abastecimento {
+  id: string;
+  dataHora: string;
+  veiculoPlaca: string;
+  motoristaNome: string;
+  odometroKm: number;
+  litrosAbastecidos: number;
+  tipoCombustivel: TipoCombustivel;
+  valorTotal: number;
+  posto: string;
+  kmRodadosDesdeUltimo?: number;
+  mediaKmL?: number; // km por litro
+}
+
+export interface SupabaseConfig {
+  url: string;
+  anonKey: string;
+  isConnected: boolean;
 }
