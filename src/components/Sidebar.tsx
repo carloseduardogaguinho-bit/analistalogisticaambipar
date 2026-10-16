@@ -13,7 +13,8 @@ import {
   Fuel,
   Users,
   Database,
-  Leaf
+  Leaf,
+  DollarSign
 } from 'lucide-react';
 
 export type TabType =
@@ -21,16 +22,18 @@ export type TabType =
   | 'viagens'
   | 'frota'
   | 'manutencao'
+  | 'cotacoes'
   | 'checklist'
   | 'abastecimento'
   | 'motoristas'
+  | 'medicoes'
+  | 'fiscal'
   | 'mtr'
   | 'ocorrencias'
   | 'kpis'
   | 'importador'
   | 'calculadora'
-  | 'relatorio'
-  | 'fiscal';
+  | 'relatorio';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -60,12 +63,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'viagens' as TabType, label: 'Viagens & Despacho', icon: Truck, badge: viagensCount },
     { id: 'frota' as TabType, label: 'Controle de Frota & Placas', icon: Truck, badge: veiculosCount },
     { id: 'manutencao' as TabType, label: 'Manutenções Programadas', icon: Wrench, badge: manutencoesCount > 0 ? manutencoesCount : null, badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/40' },
+    { id: 'cotacoes' as TabType, label: 'Cotações & Oficinas (Saving)', icon: DollarSign, badge: 'SAVING', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
     { id: 'checklist' as TabType, label: 'Checklist Diário', icon: ClipboardCheck, badge: null },
-    { id: 'abastecimento' as TabType, label: 'Abastecimento & Médias', icon: Fuel, badge: 'km/L', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
+    { id: 'abastecimento' as TabType, label: 'Controle Combustível & Médias', icon: Fuel, badge: 'km/L', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
     { id: 'motoristas' as TabType, label: 'Cadastro de Motoristas', icon: Users, badge: null },
   ];
 
   const complianceItems = [
+    { id: 'medicoes' as TabType, label: 'Medições Clientes & Fornecedores', icon: FileSpreadsheet, badge: 'BM', badgeColor: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' },
     { id: 'fiscal' as TabType, label: 'Emissão CT-e / DACTE / SEFAZ', icon: FileText, badge: ctesCount > 0 ? `${ctesCount}` : 'SEFAZ', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
     { id: 'mtr' as TabType, label: 'Conformidade MTR & SINIR', icon: FileCheck2, badge: null },
     { id: 'ocorrencias' as TabType, label: 'Ocorrências & Resposta 24h', icon: AlertTriangle, badge: ocorrenciasCount > 0 ? ocorrenciasCount : null, badgeColor: 'bg-rose-500/20 text-rose-400 border border-rose-500/40' },

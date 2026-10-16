@@ -11,7 +11,8 @@ import {
   Building,
   Calendar,
   X,
-  FileCheck
+  FileCheck,
+  Sparkles
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDateTime } from '../utils/formatters';
 
@@ -227,6 +228,12 @@ export const ManutencaoView: React.FC<ManutencaoViewProps> = ({
                   >
                     {m.status}
                   </span>
+                  {m.descricao.includes('[ORIGEM COTAÇÃO') && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      <span>Cotação Aprovada (Melhor Preço)</span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="text-right text-xs font-bold text-white">

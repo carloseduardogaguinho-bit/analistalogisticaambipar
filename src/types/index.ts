@@ -319,3 +319,106 @@ export interface EmpresaFiscalConfig {
   provedorConexao: 'Sefaz Direta (Web Services)' | 'Focus NFe' | 'Nuvem Fiscal' | 'SpeedGov';
   apiTokenGateway?: string;
 }
+
+/* =========================================================
+   MEDIÇÕES DE CLIENTES E FORNECEDORES (FATURAMENTO & CONTAS)
+   ========================================================= */
+
+export type TipoMedicao = 'Cliente (Faturamento)' | 'Fornecedor (Contas a Pagar)';
+export type StatusMedicao = 
+  | 'Em Aberto'
+  | 'Enviada para Conferência'
+  | 'Divergência / Em Contestação'
+  | 'Aprovada'
+  | 'Faturada / Liquidada';
+
+export interface ItemMedicao {
+  id: string;
+  descricao: string;
+  quantidade: number;
+  unidade: 'ton' | 'km' | 'diária' | 'hora' | 'viagem';
+  valorUnitario: number;
+  valorTotal: number;
+  viagemCodigo?: string;
+  placaVeiculo?: string;
+  ticketBalanca?: string;
+  numeroMtr?: string;
+}
+
+export interface MedicaoContrato {
+  id: string;
+  numeroMedicao: string; // Ex: BM-2026-0042
+  tipo: TipoMedicao;
+  contraparteNome: string; // Nome do Cliente ou Fornecedor
+  contraparteCnpj: string;
+  contratoNumero: string;
+  periodoInicio: string;
+  periodoFim: string;
+  dataEmissao: string;
+  dataAprovacao?: string;
+  dataVencimento?: string;
+  status: StatusMedicao;
+  itens: ItemMedicao[];
+  valorTotalMedido: number;
+  valorAprovadoContraparte?: number;
+  valorAprovado?: number;
+  valorDivergencia?: number;
+  justificativaDivergencia?: string;
+  justificativaGlosa?: string;
+  numeroNotaFiscal?: string;
+  numeroNfFaturamento?: string;
+  responsavelAmbipar: string;
+  observacoes?: string;
+}
+
+/* =========================================================
+   COTAÇÕES DE OFICINAS & GESTÃO DE SAVING DE MANUTENÇÃO
+   ========================================================= */
+
+export type StatusCotacao = 
+  | 'Aberta (Em Cotação)'
+  | 'Aguardando Aprovação'
+  | 'Aprovada (Gerou OS)'
+  | 'Cancelada';
+
+export interface PropostaOficina {
+  id: string;
+  oficinaNome: string;
+  oficinaCnpj?: string;
+  oficinaCidade: string;
+  cidade?: string;
+  telefoneContato: string;
+  valorPecas: number;
+  valorMaoDeObra: number;
+  valorTotal: number;
+  prazoDias: number;
+  prazoDiasExecucao?: number;
+  condicaoPagamento: string; // Ex: Faturado 30 dias, À vista c/ desconto
+  garantiaMeses: number;
+  observacoes?: string;
+  isVencedora?: boolean;
+}
+
+export interface CotacaoManutencao {
+  id: string;
+  codigoCotacao: string; // Ex: COT-2026-0089
+  veiculoPlaca: string;
+  modeloVeiculo: string;
+  tipoServico: string; // Ex: Sistema de Freios, Embreagem, Pneus, Suspensão
+  descricaoNecessidade: string;
+  kmAtualVeiculo: number;
+  dataAbertura: string;
+  dataLimiteResposta: string;
+  dataAprovacao?: string;
+  status: StatusCotacao;
+  propostas: PropostaOficina[];
+  propostaVencedoraId?: string;
+  economiaSavingReais?: number; // Diferença entre o maior orçamento e o menor
+  economiaSavingPercentual?: number;
+  savingEstimado?: number;
+  motivoEscolha?: string;
+  justificativaEscolha?: string;
+  responsavelCotacao: string;
+  ordemServicoGeradaId?: string;
+}
+

@@ -15,6 +15,10 @@ import {
   CteDocumento,
   MdfeDocumento,
   EmpresaFiscalConfig,
+  MedicaoContrato,
+  CotacaoManutencao,
+  PropostaOficina,
+  StatusMedicao,
 } from './types';
 
 import {
@@ -42,6 +46,10 @@ import {
   saveStoredMdfes,
   getStoredEmpresaFiscal,
   saveStoredEmpresaFiscal,
+  getStoredMedicoes,
+  saveStoredMedicoes,
+  getStoredCotacoes,
+  saveStoredCotacoes,
 } from './utils/storage';
 import { ParsedSefazXml } from './utils/sebraeUtils';
 
@@ -53,9 +61,11 @@ import { DashboardView } from './components/DashboardView';
 import { ViagensView } from './components/ViagensView';
 import { FrotaView } from './components/FrotaView';
 import { ManutencaoView } from './components/ManutencaoView';
+import { CotacoesOficinasView } from './components/CotacoesOficinasView';
 import { ChecklistView } from './components/ChecklistView';
 import { AbastecimentoView } from './components/AbastecimentoView';
 import { MotoristasView } from './components/MotoristasView';
+import { MedicoesView } from './components/MedicoesView';
 import { MtrView } from './components/MtrView';
 import { OcorrenciasView } from './components/OcorrenciasView';
 import { EsgKpiView } from './components/EsgKpiView';
@@ -83,6 +93,8 @@ export const App: React.FC = () => {
   const [ctes, setCtes] = useState<CteDocumento[]>([]);
   const [mdfes, setMdfes] = useState<MdfeDocumento[]>([]);
   const [empresaFiscal, setEmpresaFiscal] = useState<EmpresaFiscalConfig>(getStoredEmpresaFiscal());
+  const [medicoes, setMedicoes] = useState<MedicaoContrato[]>([]);
+  const [cotacoes, setCotacoes] = useState<CotacaoManutencao[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   // Initial Load
@@ -102,6 +114,8 @@ export const App: React.FC = () => {
     setCtes(getStoredCtes());
     setMdfes(getStoredMdfes());
     setEmpresaFiscal(getStoredEmpresaFiscal());
+    setMedicoes(getStoredMedicoes());
+    setCotacoes(getStoredCotacoes());
     setLoaded(true);
 
     // If Supabase is connected, try to sync from cloud
@@ -152,6 +166,8 @@ export const App: React.FC = () => {
   useEffect(() => { if (loaded) saveStoredCtes(ctes); }, [ctes, loaded]);
   useEffect(() => { if (loaded) saveStoredMdfes(mdfes); }, [mdfes, loaded]);
   useEffect(() => { if (loaded) saveStoredEmpresaFiscal(empresaFiscal); }, [empresaFiscal, loaded]);
+  useEffect(() => { if (loaded) saveStoredMedicoes(medicoes); }, [medicoes, loaded]);
+  useEffect(() => { if (loaded) saveStoredCotacoes(cotacoes); }, [cotacoes, loaded]);
 
   // Handlers: Viagens
   const handleAddViagem = (newTrip: Viagem) => {
@@ -426,6 +442,97 @@ export const App: React.FC = () => {
     alert(`Sincronização com o SEBRAE/SEFAZ realizada com sucesso!\n${countCte} CT-e(s) e ${countMdfe} MDF-e(s) atualizados com protocolos oficiais da SEFAZ.`);
   };
 
+  // Handlers: Medições Clientes & Fornecedores
+  const handleAddMedicao = (newMed: MedicaoContrato) => {
+    setMedicoes((prev) => [newMed, ...prev]);
+  };
+
+  const handleUpdateMedicaoStatus = (
+    id: string,
+    status: StatusMedicao,
+    valorAprovado?: number,
+    justificativa?: string,
+    numeroNf?: string
+  ) => {
+    setMedicoes((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        return {
+          ...m,
+          status,
+          valorAprovado: valorAprovado !== undefined ? valorAprovado : m.valorAprovado,
+          justificativaGlosa: justificativa !== undefined ? justificativa : m.justificativaGlosa,
+          numeroNfFaturamento: numeroNf !== undefined ? numeroNf : m.numeroNfFaturamento,
+          dataAprovacao: (status === 'Aprovada' || status === 'Faturada / Liquidada') ? new Date().toISOString().slice(0, 10) : m.dataAprovacao,
+        };
+      })
+    );
+  };
+
+  // Handlers: Cotações & Oficinas (Saving)
+  const handleAddCotacao = (newCot: CotacaoManutencao) => {
+    setCotacoes((prev) => [newCot, ...prev]);
+  };
+
+  const handleAddProposta = (cotacaoId: string, proposta: PropostaOficina) => {
+    setCotacoes((prev) =>
+      prev.map((c) => {
+        if (c.id !== cotacaoId) return c;
+        const propostasAtualizadas = [...c.propostas, proposta];
+        const valores = propostasAtualizadas.map((p) => p.valorTotal);
+        const menorValor = Math.min(...valores);
+        const maiorValor = Math.max(...valores);
+        const savingEstimado = maiorValor > menorValor ? maiorValor - menorValor : c.savingEstimado;
+        return {
+          ...c,
+          propostas: propostasAtualizadas,
+          savingEstimado,
+        };
+      })
+    );
+  };
+
+  const handleAprovarCotacao = (cotacaoId: string, propostaId: string, motivo: string) => {
+    const cot = cotacoes.find((c) => c.id === cotacaoId);
+    if (!cot) return;
+    const propVencedora = cot.propostas.find((p) => p.id === propostaId);
+    if (!propVencedora) return;
+
+    // 1. Atualiza status da cotação e proposta vencedora
+    setCotacoes((prev) =>
+      prev.map((c) => {
+        if (c.id !== cotacaoId) return c;
+        return {
+          ...c,
+          status: 'Aprovada (Gerou OS)',
+          propostaVencedoraId: propostaId,
+          justificativaEscolha: motivo,
+          dataAprovacao: new Date().toISOString().slice(0, 10),
+        };
+      })
+    );
+
+    // 2. Cria Ordem de Serviço na Manutenção da Frota automaticamente!
+    const veic = veiculos.find((v) => v.placa === cot.veiculoPlaca);
+    const odometro = veic?.odometroAtualKm || 50000;
+    const novaOS: Manutencao = {
+      id: `os-cot-${Date.now()}`,
+      veiculoPlaca: cot.veiculoPlaca,
+      tipo: 'Corretiva Emergencial',
+      descricao: `[ORIGEM COTAÇÃO ${cot.codigoCotacao}] ${cot.descricaoNecessidade} (Peças: R$ ${propVencedora.valorPecas.toFixed(2)}, M.O: R$ ${propVencedora.valorMaoDeObra.toFixed(2)} - Garantia: ${propVencedora.garantiaMeses} meses - Condição: ${propVencedora.condicaoPagamento})`,
+      kmNoMomento: odometro,
+      kmProximaRevisao: odometro + 10000,
+      dataEntrada: new Date().toISOString().slice(0, 10),
+      dataPrevisaoSaida: new Date(Date.now() + (propVencedora.prazoDiasExecucao || 2) * 86400 * 1000).toISOString().slice(0, 10),
+      oficina: `${propVencedora.oficinaNome} (${propVencedora.cidade})`,
+      custoTotal: propVencedora.valorTotal,
+      status: 'Agendada',
+      responsavelAprovacao: 'Analista de Logística Ambipar',
+    };
+
+    handleAddManutencao(novaOS);
+  };
+
   // Refresh
   const handleRefresh = () => {
     setViagens(getStoredViagens());
@@ -440,6 +547,8 @@ export const App: React.FC = () => {
     setCtes(getStoredCtes());
     setMdfes(getStoredMdfes());
     setEmpresaFiscal(getStoredEmpresaFiscal());
+    setMedicoes(getStoredMedicoes());
+    setCotacoes(getStoredCotacoes());
   };
 
   const ocorrenciasAbertasCount = ocorrencias.filter((o) => o.status !== 'Concluída').length;
@@ -508,6 +617,16 @@ export const App: React.FC = () => {
             />
           )}
 
+          {activeTab === 'cotacoes' && (
+            <CotacoesOficinasView
+              cotacoes={cotacoes}
+              veiculos={veiculos}
+              onAddCotacao={handleAddCotacao}
+              onAddProposta={handleAddProposta}
+              onAprovarCotacao={handleAprovarCotacao}
+            />
+          )}
+
           {activeTab === 'checklist' && (
             <ChecklistView
               checklists={checklists}
@@ -532,6 +651,15 @@ export const App: React.FC = () => {
               veiculos={veiculos}
               onAddMotorista={handleAddMotorista}
               onUpdateMotoristaStatus={handleUpdateMotoristaStatus}
+            />
+          )}
+
+          {activeTab === 'medicoes' && (
+            <MedicoesView
+              medicoes={medicoes}
+              viagens={viagens}
+              onAddMedicao={handleAddMedicao}
+              onUpdateMedicaoStatus={handleUpdateMedicaoStatus}
             />
           )}
 

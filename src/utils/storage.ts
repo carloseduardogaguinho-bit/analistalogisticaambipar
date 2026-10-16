@@ -11,6 +11,8 @@ import {
   CteDocumento,
   MdfeDocumento,
   EmpresaFiscalConfig,
+  MedicaoContrato,
+  CotacaoManutencao,
 } from '../types';
 import {
   INITIAL_VIAGENS,
@@ -42,6 +44,8 @@ const KEYS = {
   CTES: 'ambipar_logistica_ctes_v2',
   MDFES: 'ambipar_logistica_mdfes_v2',
   EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v2',
+  MEDICOES: 'ambipar_logistica_medicoes_v2',
+  COTACOES: 'ambipar_logistica_cotacoes_v2',
 };
 
 // Limpa automaticamente dados de versões anteriores com dados fictícios
@@ -201,3 +205,19 @@ export const getStoredEmpresaFiscal = (): EmpresaFiscalConfig => {
   try { return JSON.parse(data); } catch { return INITIAL_EMPRESA_FISCAL; }
 };
 export const saveStoredEmpresaFiscal = (data: EmpresaFiscalConfig) => localStorage.setItem(KEYS.EMPRESA_FISCAL, JSON.stringify(data));
+
+// Medições de Clientes e Fornecedores
+export const getStoredMedicoes = (): MedicaoContrato[] => {
+  const data = localStorage.getItem(KEYS.MEDICOES);
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
+};
+export const saveStoredMedicoes = (data: MedicaoContrato[]) => localStorage.setItem(KEYS.MEDICOES, JSON.stringify(data));
+
+// Cotações de Oficinas
+export const getStoredCotacoes = (): CotacaoManutencao[] => {
+  const data = localStorage.getItem(KEYS.COTACOES);
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
+};
+export const saveStoredCotacoes = (data: CotacaoManutencao[]) => localStorage.setItem(KEYS.COTACOES, JSON.stringify(data));
