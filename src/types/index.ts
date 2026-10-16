@@ -15,7 +15,12 @@ export type TipoEquipamento =
   | 'Carreta Baú Carga Seca'
   | 'Sider Especial'
   | 'VUC Coleta Urbana'
-  | 'Veículo Rápido Emergência';
+  | 'Veículo Rápido Emergência'
+  | 'Tanque Sucção a Vácuo'
+  | 'Prancha Carrega-Tudo';
+
+export type TipoPropriedadeVeiculo = 'Frota Própria Ambipar' | 'Locado / Leasing' | 'Terceiro / Agregado';
+export type TipoTracaoVeiculo = '4x2 (Toco)' | '6x2 (Trucado)' | '6x4 (Traçado)' | '8x2 (Bitruck)' | 'Semirreboque / Carreta';
 
 export type ClasseResiduo =
   | 'Classe I - Perigoso (Inflamável / Tóxico)'
@@ -110,14 +115,45 @@ export interface Veiculo {
   modelo: string;
   marca: string;
   ano: number;
+  anoModelo?: number;
+  chassi?: string;
+  renavam?: string;
+  cor?: string;
+  tipoTracao?: TipoTracaoVeiculo;
   tipoEquipamento: TipoEquipamento;
+  tipoPropriedade?: TipoPropriedadeVeiculo;
   baseOperacional: string;
-  odometroAtualKm: number;
+  motoristaTitularNome?: string;
+
+  // Capacidades Mecânicas & Carga
   capacidadeCargaTon: number;
+  volumeTanqueM3?: number;
+  materialTanque?: string; // Ex: 'Inox 316L', 'Aço Carbono', 'Revestimento Epóxi'
+  odometroAtualKm: number;
   status: StatusVeiculo;
+
+  // Manutenção Preventiva
   proximaRevisaoKm: number;
   dataUltimaRevisao?: string;
+  scoreSaudeMecanica?: number; // 0 a 100%
+
+  // Combustível & Telemetria
   tipoCombustivelPadrao: TipoCombustivel;
+  mediaConsumoMeta?: number; // km/L
+
+  // Certificações Regulamentares e Laudos (SASSMAQ / Inmetro / ANTT)
+  numeroCiv?: string;
+  validadeCiv?: string; // Certificado de Inspeção Veicular
+  numeroCipp?: string;
+  validadeCipp?: string; // Certificado de Inspeção para Transporte de Produtos Perigosos
+  numeroCronotacografo?: string;
+  validadeCronotacografo?: string; // Inmetro
+  licencaAmbientalTransporte?: string;
+  validadeLicencaAmbiental?: string;
+  apoliceSeguro?: string;
+  seguradoraNome?: string;
+  validadeSeguro?: string;
+  observacoes?: string;
 }
 
 export type StatusMotorista = 'Ativo' | 'Em Férias' | 'Afastado' | 'Bloqueado (Documento Vencido)';

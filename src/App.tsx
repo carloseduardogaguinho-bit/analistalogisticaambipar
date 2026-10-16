@@ -237,6 +237,16 @@ export const App: React.FC = () => {
     );
   };
 
+  const handleUpdateVeiculo = (updatedVeic: Veiculo) => {
+    setVeiculos((prev) =>
+      prev.map((v) => (v.id === updatedVeic.id ? updatedVeic : v))
+    );
+  };
+
+  const handleDeleteVeiculo = (id: string) => {
+    setVeiculos((prev) => prev.filter((v) => v.id !== id));
+  };
+
   // Handlers: Motoristas
   const handleAddMotorista = (mot: Motorista) => {
     setMotoristas((prev) => [mot, ...prev]);
@@ -620,6 +630,8 @@ export const App: React.FC = () => {
             <FrotaView
               veiculos={veiculos}
               onAddVeiculo={handleAddVeiculo}
+              onUpdateVeiculo={handleUpdateVeiculo}
+              onDeleteVeiculo={handleDeleteVeiculo}
               onUpdateVeiculoStatus={handleUpdateVeiculoStatus}
             />
           )}
