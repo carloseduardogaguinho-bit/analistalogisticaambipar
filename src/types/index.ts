@@ -120,20 +120,54 @@ export interface Veiculo {
   tipoCombustivelPadrao: TipoCombustivel;
 }
 
+export type StatusMotorista = 'Ativo' | 'Em Férias' | 'Afastado' | 'Bloqueado (Documento Vencido)';
+export type RegimeContratacaoMotorista = 'CLT Ambipar' | 'Terceirizado' | 'Agregado';
+export type CategoriaCnh = 'C' | 'D' | 'E';
+
 export interface Motorista {
   id: string;
   nome: string;
   cpf: string;
-  cnh: string;
-  categoriaCnh: 'D' | 'E';
-  validadeCnh: string;
-  validadeMopp: string; // Curso MOPP Produtos Perigosos
-  validadeToxico: string; // Exame Toxicológico
+  rg?: string;
+  telefone?: string;
+  email?: string;
+  contatoEmergenciaNome?: string;
+  contatoEmergenciaTelefone?: string;
+  contatoEmergenciaParentesco?: string;
+  tipoSanguineo?: string; // Ex: 'O+', 'A+', 'B+', 'AB-', etc.
+
+  // Dados Funcionais Ambipar
+  matricula?: string;
+  dataAdmissao?: string;
+  regimeContratacao?: RegimeContratacaoMotorista;
   baseOperacional: string;
   veiculoFixoPlaca?: string;
-  status: 'Ativo' | 'Em Férias' | 'Afastado';
+  status: StatusMotorista;
+
+  // CNH & Órgãos de Trânsito
+  cnh: string;
+  categoriaCnh: CategoriaCnh;
+  validadeCnh: string;
+  dataPrimeiraCnh?: string;
+  orgaoEmissorCnh?: string;
+  pontuacaoAtualCnh?: number;
+  exerceAtividadeRemunerada?: boolean; // EAR
+
+  // Certificados e Saúde Obrigatória (SASSMAQ / MOPP)
+  validadeMopp: string; // Curso MOPP Produtos Perigosos
+  validadeToxico: string; // Exame Toxicológico Periódico
+  validadeAso?: string; // Atestado de Saúde Ocupacional
+  validadeNr20?: string; // Inflamáveis e Combustíveis
+  validadeNr35?: string; // Trabalho em Altura / Enlonamento
+  validadeDirecaoDefensiva?: string;
+
+  // Indicadores de Telemetria e Desempenho
   mediaConsumoGeral?: number; // km/litro
   viagensRealizadasCount?: number;
+  kmTotalRodados?: number;
+  scoreEcoconducao?: number; // 0 a 100
+  ocorrenciasCount?: number;
+  observacoes?: string;
 }
 
 export type TipoManutencao =

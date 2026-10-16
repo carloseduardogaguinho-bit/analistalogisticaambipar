@@ -264,6 +264,16 @@ export const App: React.FC = () => {
     );
   };
 
+  const handleUpdateMotorista = (updatedMot: Motorista) => {
+    setMotoristas((prev) =>
+      prev.map((m) => (m.id === updatedMot.id ? updatedMot : m))
+    );
+  };
+
+  const handleDeleteMotorista = (id: string) => {
+    setMotoristas((prev) => prev.filter((m) => m.id !== id));
+  };
+
   // Handlers: Manutenções
   const handleAddManutencao = (man: Manutencao) => {
     setManutencoes((prev) => [man, ...prev]);
@@ -650,6 +660,8 @@ export const App: React.FC = () => {
               motoristas={motoristas}
               veiculos={veiculos}
               onAddMotorista={handleAddMotorista}
+              onUpdateMotorista={handleUpdateMotorista}
+              onDeleteMotorista={handleDeleteMotorista}
               onUpdateMotoristaStatus={handleUpdateMotoristaStatus}
             />
           )}
