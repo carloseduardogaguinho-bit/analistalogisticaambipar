@@ -760,17 +760,41 @@ export const PortalFiscalView: React.FC<PortalFiscalViewProps> = ({
             </div>
 
             {/* Arquitetura SEFAZ Explicativa para o Analista */}
-            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-[11px] text-slate-400">
-              <span className="font-bold text-white block flex items-center gap-1.5">
+            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-[11px] text-slate-300">
+              <span className="font-bold text-white block flex items-center gap-1.5 text-xs text-amber-400">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                Como funciona a integração fiscal no sistema:
+                Como emitir se você NÃO tiver uma API paga terceirizada:
               </span>
-              <p>
-                <strong>1. Padrão Nacional SEFAZ:</strong> O sistema gera chaves de 44 dígitos com validação de dígito verificador Módulo 11 oficial, XMLs no formato <code className="text-white">cteProc 4.00</code> e <code className="text-white">mdfeProc 3.00</code> e documentos impressos DACTE / DAMDFE padrão A4 com canhoto e códigos de barras.
-              </p>
-              <p>
-                <strong>2. Assinatura e Transmissão:</strong> Por exigência de segurança da SEFAZ, o envio requer mTLS SOAP assinado com Certificado Digital A1 (<code className="text-white">.pfx</code>). Em navegadores, isso é intermediado pelo Gateway Fiscal selecionado (Focus NFe ou Nuvem Fiscal) ou pelo servidor de Web Services da transportadora.
-              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                  <strong className="text-emerald-400 block text-xs">Opção 1: Emissor Gratuito SEBRAE / SEFAZ (Custo Zero)</strong>
+                  <p className="text-slate-400 text-[10px] leading-relaxed">
+                    Você emite e organiza as viagens aqui no nosso sistema, clica em <strong>"Baixar XML"</strong> (padrão CT-e 4.00 ou MDF-e 3.00) e importa os arquivos diretamente no <strong>Emissor Gratuito do SEBRAE</strong> instalado no seu computador com o Certificado Digital A1 da Ambipar. Ele assina e transmite para a SEFAZ de graça.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                  <strong className="text-cyan-400 block text-xs">Opção 2: Backend Interno com Biblioteca Open-Source</strong>
+                  <p className="text-slate-400 text-[10px] leading-relaxed">
+                    Podemos plugar um microserviço open-source gratuito (ex: bibliotecas Node.js SPED, NFePHP ou ACBr) no servidor da Ambipar. O certificado A1 fica no servidor e assina os XMLs gerados por este sistema, conectando diretamente nos Web Services da SEFAZ Estadual sem intermediários.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                  <strong className="text-indigo-400 block text-xs">Opção 3: Integração TMS / ERP Corporativo (SAP / TOTVS)</strong>
+                  <p className="text-slate-400 text-[10px] leading-relaxed">
+                    Se a Ambipar já tiver um ERP centralizado (SAP, TOTVS Protheus ou TMS), os XMLs e dados gerados aqui são exportados nos padrões <strong>PROCEDA (CONEMB / NOTFIS)</strong> para faturamento no canal fiscal corporativo existente.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
+                  <strong className="text-amber-400 block text-xs">Opção 4: Gateways REST (Focus NFe / Nuvem Fiscal)</strong>
+                  <p className="text-slate-400 text-[10px] leading-relaxed">
+                    Quando a empresa optar pela comodidade de nuvem automática, basta preencher o Token de API acima. O sistema fará a transmissão 100% transparente com 1 clique direto da plataforma.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
