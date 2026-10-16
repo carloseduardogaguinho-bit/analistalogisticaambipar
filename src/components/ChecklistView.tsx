@@ -146,7 +146,10 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       saida: g.saida,
       retorno: g.retorno,
       veiculoPlaca: g.saida?.veiculoPlaca || g.retorno?.veiculoPlaca || 'AMB',
+      placaCarreta: g.saida?.placaCarreta || g.retorno?.placaCarreta,
       motoristaNome: g.saida?.motoristaNome || g.retorno?.motoristaNome || 'Motorista',
+      segundoMotoristaNome: g.saida?.segundoMotoristaNome || g.retorno?.segundoMotoristaNome,
+      ajudanteNome: g.saida?.ajudanteNome || g.retorno?.ajudanteNome,
       data: g.saida?.dataHora.slice(0, 10) || g.retorno?.dataHora.slice(0, 10) || '',
       kmInicial: g.saida?.kmInicial,
       kmFinal: g.retorno?.kmFinal,
@@ -199,8 +202,11 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       jornadaId: `jornada-${Date.now()}`,
       dataHora: new Date().toISOString().slice(0, 16).replace('T', ' '),
       veiculoPlaca: formData.veiculoPlaca || 'AMB-0000',
+      placaCarreta: formData.placaCarreta?.trim() || undefined,
       motoristaNome: formData.motoristaNome || 'Motorista Operacional',
       motoristaCpf: mot?.cpf,
+      segundoMotoristaNome: formData.segundoMotoristaNome?.trim() || undefined,
+      ajudanteNome: formData.ajudanteNome?.trim() || undefined,
       kmInicial: Number(formData.kmInicial) || 0,
       tipoInspecao: (formData.tipoInspecao as any) || 'Saída para Viagem',
       pneusPressaoEEstado: Boolean(formData.pneusPressaoEEstado),
@@ -250,15 +256,20 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {onOpenPortalMotorista && (
-            <button
-              onClick={onOpenPortalMotorista}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Abrir Portal do Motorista (Mobile)</span>
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.open(portalUrl, '_blank');
+              } else if (onOpenPortalMotorista) {
+                onOpenPortalMotorista();
+              }
+            }}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition"
+            title="Abrir o Portal do Motorista em uma nova janela/aba isolada"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Abrir Portal do Motorista (Nova Aba)</span>
+          </button>
 
           <button
             onClick={() => setIsModalOpen(true)}
@@ -471,12 +482,29 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs font-black text-white bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
                           {c.veiculoPlaca}
                         </span>
+                        {c.placaCarreta && (
+                          <span className="font-mono text-xs font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-500/30">
+                            Carreta: {c.placaCarreta}
+                          </span>
+                        )}
                         <div>
-                          <div className="text-xs font-bold text-slate-200">{c.motoristaNome}</div>
+                          <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5 flex-wrap">
+                            <span>{c.motoristaNome}</span>
+                            {c.segundoMotoristaNome && (
+                              <span className="text-[10px] text-purple-300 font-semibold bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
+                                2º Mot: {c.segundoMotoristaNome}
+                              </span>
+                            )}
+                            {c.ajudanteNome && (
+                              <span className="text-[10px] text-amber-300 font-semibold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                Ajudante: {c.ajudanteNome}
+                              </span>
+                            )}
+                          </div>
                           {c.motoristaCpf && (
                             <span className="text-[10px] font-mono text-slate-500">CPF: {c.motoristaCpf}</span>
                           )}
@@ -588,12 +616,29 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               jornadasAgrupadas.map((j) => (
                 <div key={j.chave} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 hover:border-slate-700 transition">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="font-mono font-bold text-white text-xs bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
                         {j.veiculoPlaca}
                       </span>
+                      {j.placaCarreta && (
+                        <span className="font-mono text-xs font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-500/30">
+                          Carreta: {j.placaCarreta}
+                        </span>
+                      )}
                       <div>
-                        <div className="text-xs font-bold text-white">{j.motoristaNome}</div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                          <span>{j.motoristaNome}</span>
+                          {j.segundoMotoristaNome && (
+                            <span className="text-[10px] text-purple-300 font-semibold bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
+                              2º Mot: {j.segundoMotoristaNome}
+                            </span>
+                          )}
+                          {j.ajudanteNome && (
+                            <span className="text-[10px] text-amber-300 font-semibold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                              Ajudante: {j.ajudanteNome}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-500">Data: {j.data}</span>
                       </div>
                     </div>
@@ -743,9 +788,9 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Veículo (Placa) *</label>
+                  <label className="block text-slate-400 font-semibold mb-1">Veículo (Cavalo Mecânico) *</label>
                   <select
                     value={formData.veiculoPlaca}
                     onChange={(e) => setFormData({ ...formData, veiculoPlaca: e.target.value })}
@@ -760,16 +805,54 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Motorista Responsável *</label>
+                  <label className="block text-slate-400 font-semibold mb-1">Placa da Carreta (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: REB-9081 ou CAR-1234"
+                    value={formData.placaCarreta || ''}
+                    onChange={(e) => setFormData({ ...formData, placaCarreta: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Motorista Titular *</label>
                   <select
                     value={formData.motoristaNome}
                     onChange={(e) => setFormData({ ...formData, motoristaNome: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
                   >
                     {motoristas.map((m) => (
                       <option key={m.id} value={m.nome}>{m.nome}</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">2º Motorista (Revezamento)</label>
+                  <select
+                    value={formData.segundoMotoristaNome || ''}
+                    onChange={(e) => setFormData({ ...formData, segundoMotoristaNome: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                  >
+                    <option value="">Sem 2º Motorista</option>
+                    {motoristas.map((m) => (
+                      <option key={m.id} value={m.nome}>{m.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Ajudante Operacional</label>
+                  <input
+                    type="text"
+                    placeholder="Nome do Ajudante (opcional)"
+                    value={formData.ajudanteNome || ''}
+                    onChange={(e) => setFormData({ ...formData, ajudanteNome: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs"
+                  />
                 </div>
               </div>
 

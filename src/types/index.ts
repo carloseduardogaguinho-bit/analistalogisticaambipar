@@ -293,7 +293,8 @@ export interface Veiculo {
 
 export type StatusMotorista = 'Ativo' | 'Em Férias' | 'Afastado' | 'Bloqueado (Documento Vencido)';
 export type RegimeContratacaoMotorista = 'CLT Ambipar' | 'Terceirizado' | 'Agregado';
-export type CategoriaCnh = 'C' | 'D' | 'E';
+export type CategoriaCnh = 'C' | 'D' | 'E' | 'Não Aplicável (Ajudante)';
+export type FuncaoTripulante = 'Motorista Titular' | 'Segundo Motorista (Revezamento)' | 'Ajudante Operacional / Transbordo';
 
 export interface Motorista {
   id: string;
@@ -308,6 +309,7 @@ export interface Motorista {
   tipoSanguineo?: string; // Ex: 'O+', 'A+', 'B+', 'AB-', etc.
 
   // Dados Funcionais Ambipar
+  funcao?: FuncaoTripulante;
   matricula?: string;
   dataAdmissao?: string;
   regimeContratacao?: RegimeContratacaoMotorista;
@@ -378,9 +380,14 @@ export interface ChecklistDiario {
   dataHora: string;
   dataHoraRetorno?: string;
   veiculoPlaca: string;
+  placaCarreta?: string;
   motoristaNome: string;
   motoristaCpf?: string;
   motoristaTelefone?: string;
+  segundoMotoristaNome?: string;
+  segundoMotoristaCpf?: string;
+  ajudanteNome?: string;
+  ajudanteCpf?: string;
   tipoInspecao: TipoInspecaoChecklist;
 
   // Quilometragem & Odômetro

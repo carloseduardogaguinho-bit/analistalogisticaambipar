@@ -643,15 +643,6 @@ export const App: React.FC = () => {
         motoristas={motoristas}
         checklists={checklists}
         onAddChecklist={handleAddChecklist}
-        onExitPortal={() => {
-          setIsPortalMotorista(false);
-          if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('portal');
-            url.searchParams.delete('motorista');
-            window.history.pushState({}, '', url.pathname);
-          }
-        }}
       />
     );
   }
@@ -666,11 +657,12 @@ export const App: React.FC = () => {
         isSupabaseConnected={isSupabaseConnected}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenPortalMotorista={() => {
-          setIsPortalMotorista(true);
           if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
+            const url = new URL(window.location.origin + window.location.pathname);
             url.searchParams.set('portal', 'motorista');
-            window.history.pushState({}, '', url.toString());
+            window.open(url.toString(), '_blank');
+          } else {
+            setIsPortalMotorista(true);
           }
         }}
       />
@@ -746,11 +738,12 @@ export const App: React.FC = () => {
               motoristas={motoristas}
               onAddChecklist={handleAddChecklist}
               onOpenPortalMotorista={() => {
-                setIsPortalMotorista(true);
                 if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
+                  const url = new URL(window.location.origin + window.location.pathname);
                   url.searchParams.set('portal', 'motorista');
-                  window.history.pushState({}, '', url.toString());
+                  window.open(url.toString(), '_blank');
+                } else {
+                  setIsPortalMotorista(true);
                 }
               }}
             />

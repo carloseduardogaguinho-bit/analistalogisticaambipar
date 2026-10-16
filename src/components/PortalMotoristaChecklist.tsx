@@ -19,7 +19,13 @@ import {
   ArrowLeft,
   ChevronRight,
   ShieldAlert,
-  Info
+  Info,
+  Users,
+  HardHat,
+  Plus,
+  Edit3,
+  Check,
+  Fuel
 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 
@@ -36,18 +42,31 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   motoristas,
   checklists,
   onAddChecklist,
-  onExitPortal,
 }) => {
   // Step: 'login' | 'select_tipo' | 'form_inicial' | 'form_final' | 'sucesso'
   const [step, setStep] = useState<'login' | 'select_tipo' | 'form_inicial' | 'form_final' | 'sucesso'>('login');
 
-  // Login State
+  // Identificação do Motorista Principal
   const [cpfInput, setCpfInput] = useState('');
   const [motoristaLogado, setMotoristaLogado] = useState<Motorista | null>(null);
   const [nomeMotoristaManual, setNomeMotoristaManual] = useState('');
-  const [placaSelecionada, setPlacaSelecionada] = useState('');
 
-  // Checklist Inicial Aberto Hoje para este motorista/veículo
+  // Identificação e Composição do Veículo
+  const [modoCavalo, setModoCavalo] = useState<'selecionar' | 'digitar'>('selecionar');
+  const [placaCavalo, setPlacaCavalo] = useState<string>('');
+  const [modoCarreta, setModoCarreta] = useState<'sem_carreta' | 'selecionar' | 'digitar'>('sem_carreta');
+  const [placaCarreta, setPlacaCarreta] = useState<string>('');
+
+  // Tripulação Adicional
+  const [modoSegundoMotorista, setModoSegundoMotorista] = useState<'sem_segundo' | 'selecionar' | 'digitar'>('sem_segundo');
+  const [segundoMotoristaNome, setSegundoMotoristaNome] = useState<string>('');
+  const [segundoMotoristaCpf, setSegundoMotoristaCpf] = useState<string>('');
+
+  const [modoAjudante, setModoAjudante] = useState<'sem_ajudante' | 'selecionar' | 'digitar'>('sem_ajudante');
+  const [ajudanteNome, setAjudanteNome] = useState<string>('');
+  const [ajudanteCpf, setAjudanteCpf] = useState<string>('');
+
+  // Checklist Inicial Aberto Hoje para este veículo
   const [jornadaAtiva, setJornadaAtiva] = useState<ChecklistDiario | null>(null);
   const [ultimoChecklistCriado, setUltimoChecklistCriado] = useState<ChecklistDiario | null>(null);
 
@@ -94,62 +113,101 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   });
 
   // Formatação automática de CPF: 000.000.000-00
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/\D/g, '');
+  const formatCpf = (val: string) => {
+    let v = val.replace(/\D/g, '');
     if (v.length > 11) v = v.slice(0, 11);
     if (v.length > 9) {
-      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      return v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
     } else if (v.length > 6) {
-      v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      return v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
     } else if (v.length > 3) {
-      v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      return v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
     }
-    setCpfInput(v);
+    return v;
   };
 
-  // Verificar se há sessão de motorista salva no localStorage do dispositivo
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCpfInput(formatCpf(e.target.value));
+  };
+
+  // Verificar se há sessão de motorista salva no dispositivo
   useEffect(() => {
     try {
       const savedCpf = localStorage.getItem('ambipar_motorista_sessao_cpf');
       const savedNome = localStorage.getItem('ambipar_motorista_sessao_nome');
       const savedPlaca = localStorage.getItem('ambipar_motorista_sessao_placa');
+      const savedCarreta = localStorage.getItem('ambipar_motorista_sessao_carreta');
+
       if (savedCpf) {
         setCpfInput(savedCpf);
         const mot = motoristas.find((m) => m.cpf.replace(/\D/g, '') === savedCpf.replace(/\D/g, ''));
         if (mot) {
           setMotoristaLogado(mot);
           setNomeMotoristaManual(mot.nome);
-          setPlacaSelecionada(savedPlaca || mot.veiculoFixoPlaca || veiculos[0]?.placa || '');
+          const p = savedPlaca || mot.veiculoFixoPlaca || veiculos[0]?.placa || '';
+          setPlacaCavalo(p);
+          if (savedCarreta) {
+            setPlacaCarreta(savedCarreta);
+            setModoCarreta('digitar');
+          }
           setStep('select_tipo');
         } else if (savedNome) {
           setNomeMotoristaManual(savedNome);
-          setPlacaSelecionada(savedPlaca || veiculos[0]?.placa || '');
+          const p = savedPlaca || veiculos[0]?.placa || '';
+          setPlacaCavalo(p);
+          if (savedCarreta) {
+            setPlacaCarreta(savedCarreta);
+            setModoCarreta('digitar');
+          }
           setStep('select_tipo');
         }
+      } else if (veiculos.length > 0 && !placaCavalo) {
+        setPlacaCavalo(veiculos[0].placa);
       }
     } catch (e) {
       console.log('Nenhuma sessão anterior encontrada');
     }
   }, [motoristas, veiculos]);
 
-  // Verificar se há checklist inicial hoje para a placa e motorista
+  // Se veículos chegarem e placaCavalo ainda estiver vazia, sugerir o primeiro
   useEffect(() => {
-    if ((motoristaLogado?.nome || nomeMotoristaManual) && placaSelecionada) {
-      const nome = motoristaLogado?.nome || nomeMotoristaManual;
+    if (!placaCavalo && veiculos.length > 0) {
+      setPlacaCavalo(veiculos[0].placa);
+    }
+  }, [veiculos, placaCavalo]);
+
+  // Verificar se há jornada inicial aberta hoje para este veículo/motorista
+  useEffect(() => {
+    if ((motoristaLogado?.nome || nomeMotoristaManual) && placaCavalo) {
       const hoje = new Date().toISOString().slice(0, 10);
-      
+      const cleanCpf = cpfInput.replace(/\D/g, '');
+
       const abertoHoje = checklists.find(
         (c) =>
           c.tipoInspecao === 'Saída para Viagem' &&
-          c.veiculoPlaca === placaSelecionada &&
-          (c.motoristaNome.toLowerCase() === nome.toLowerCase() || (c.motoristaCpf && c.motoristaCpf.replace(/\D/g, '') === cpfInput.replace(/\D/g, ''))) &&
+          c.veiculoPlaca.toUpperCase() === placaCavalo.toUpperCase() &&
           c.dataHora.startsWith(hoje) &&
-          c.statusJornada !== 'Jornada Concluída'
+          c.statusJornada !== 'Jornada Concluída' &&
+          (cleanCpf === '' || !c.motoristaCpf || c.motoristaCpf.replace(/\D/g, '') === cleanCpf)
       );
 
       if (abertoHoje) {
         setJornadaAtiva(abertoHoje);
-        // Preenche o km inicial como base para o km final
+        if (abertoHoje.placaCarreta && !placaCarreta) {
+          setPlacaCarreta(abertoHoje.placaCarreta);
+          setModoCarreta('digitar');
+        }
+        if (abertoHoje.segundoMotoristaNome && !segundoMotoristaNome) {
+          setSegundoMotoristaNome(abertoHoje.segundoMotoristaNome);
+          setSegundoMotoristaCpf(abertoHoje.segundoMotoristaCpf || '');
+          setModoSegundoMotorista('digitar');
+        }
+        if (abertoHoje.ajudanteNome && !ajudanteNome) {
+          setAjudanteNome(abertoHoje.ajudanteNome);
+          setAjudanteCpf(abertoHoje.ajudanteCpf || '');
+          setModoAjudante('digitar');
+        }
+
         setFinalData((prev) => ({
           ...prev,
           kmFinal: abertoHoje.kmInicial + 100,
@@ -158,13 +216,13 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
         setJornadaAtiva(null);
       }
 
-      // Atualiza km inicial sugerido a partir do odômetro do veículo
-      const v = veiculos.find((veic) => veic.placa === placaSelecionada);
+      // Atualiza km inicial sugerido a partir do odômetro do veículo caso exista
+      const v = veiculos.find((veic) => veic.placa.toUpperCase() === placaCavalo.toUpperCase());
       if (v && v.odometroAtualKm) {
         setInicialData((prev) => ({ ...prev, kmInicial: v.odometroAtualKm }));
       }
     }
-  }, [motoristaLogado, nomeMotoristaManual, placaSelecionada, checklists, veiculos, cpfInput]);
+  }, [motoristaLogado, nomeMotoristaManual, placaCavalo, checklists, veiculos, cpfInput]);
 
   // Login com CPF
   const handleLogin = (e: React.FormEvent) => {
@@ -179,34 +237,41 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     if (mot) {
       setMotoristaLogado(mot);
       setNomeMotoristaManual(mot.nome);
-      setPlacaSelecionada(mot.veiculoFixoPlaca || veiculos[0]?.placa || '');
+      const defaultPlaca = mot.veiculoFixoPlaca || veiculos[0]?.placa || '';
+      if (defaultPlaca && !placaCavalo) {
+        setPlacaCavalo(defaultPlaca);
+      }
       localStorage.setItem('ambipar_motorista_sessao_cpf', cpfInput);
       localStorage.setItem('ambipar_motorista_sessao_nome', mot.nome);
-      if (mot.veiculoFixoPlaca) localStorage.setItem('ambipar_motorista_sessao_placa', mot.veiculoFixoPlaca);
+      if (defaultPlaca) localStorage.setItem('ambipar_motorista_sessao_placa', defaultPlaca);
       setStep('select_tipo');
     } else {
-      // Motorista novo / não cadastrado
+      // Motorista não encontrado previamente no cadastro
       const nomeDigitado = prompt(
-        'CPF não localizado no cadastro de frotas. Informe seu Nome Completo para liberar o checklist:',
+        'CPF não cadastrado previamente na base. Digite seu Nome Completo para liberar o acesso ao Checklist:',
         nomeMotoristaManual || ''
       );
       if (nomeDigitado && nomeDigitado.trim().length > 2) {
         setNomeMotoristaManual(nomeDigitado.trim());
-        setPlacaSelecionada(veiculos[0]?.placa || '');
+        const defaultPlaca = veiculos[0]?.placa || '';
+        if (defaultPlaca && !placaCavalo) {
+          setPlacaCavalo(defaultPlaca);
+        }
         localStorage.setItem('ambipar_motorista_sessao_cpf', cpfInput);
         localStorage.setItem('ambipar_motorista_sessao_nome', nomeDigitado.trim());
         setStep('select_tipo');
       } else {
-        alert('Nome obrigatório para registro do operador.');
+        alert('Nome obrigatório para registro e rastreabilidade da inspeção.');
       }
     }
   };
 
-  // Logout / Trocar Motorista
+  // Logout / Trocar de Motorista
   const handleLogout = () => {
     localStorage.removeItem('ambipar_motorista_sessao_cpf');
     localStorage.removeItem('ambipar_motorista_sessao_nome');
     localStorage.removeItem('ambipar_motorista_sessao_placa');
+    localStorage.removeItem('ambipar_motorista_sessao_carreta');
     setMotoristaLogado(null);
     setNomeMotoristaManual('');
     setCpfInput('');
@@ -216,12 +281,13 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   // Enviar Checklist Inicial (Saída)
   const handleSubmitInicial = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!placaSelecionada) {
-      alert('Selecione a placa do veículo.');
+    const placaFinal = placaCavalo.trim().toUpperCase();
+    if (!placaFinal) {
+      alert('Por favor, informe a Placa do Veículo Principal (Cavalo / Caminhão).');
       return;
     }
 
-    // Validação de itens críticos
+    // Validação de itens críticos SASSMAQ
     const falhaCritica =
       !inicialData.freiosEstacionamentoEServico ||
       !inicialData.vazamentoFluidos ||
@@ -248,10 +314,15 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       id: `chk-ini-${Date.now()}`,
       jornadaId,
       dataHora: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      veiculoPlaca: placaSelecionada,
+      veiculoPlaca: placaFinal,
+      placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : undefined,
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
       motoristaCpf: cpfInput,
       motoristaTelefone: motoristaLogado?.telefone,
+      segundoMotoristaNome: modoSegundoMotorista !== 'sem_segundo' && segundoMotoristaNome.trim() ? segundoMotoristaNome.trim() : undefined,
+      segundoMotoristaCpf: modoSegundoMotorista !== 'sem_segundo' && segundoMotoristaCpf.trim() ? segundoMotoristaCpf.trim() : undefined,
+      ajudanteNome: modoAjudante !== 'sem_ajudante' && ajudanteNome.trim() ? ajudanteNome.trim() : undefined,
+      ajudanteCpf: modoAjudante !== 'sem_ajudante' && ajudanteCpf.trim() ? ajudanteCpf.trim() : undefined,
       tipoInspecao: 'Saída para Viagem',
       kmInicial: Number(inicialData.kmInicial) || 0,
       pneusPressaoEEstado: inicialData.pneusPressaoEEstado,
@@ -280,28 +351,30 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     onAddChecklist(newChk);
     setUltimoChecklistCriado(newChk);
     setJornadaAtiva(newChk);
-    localStorage.setItem('ambipar_motorista_sessao_placa', placaSelecionada);
+    localStorage.setItem('ambipar_motorista_sessao_placa', placaFinal);
+    if (newChk.placaCarreta) localStorage.setItem('ambipar_motorista_sessao_carreta', newChk.placaCarreta);
     setStep('sucesso');
   };
 
   // Enviar Checklist Final (Retorno à Base)
   const handleSubmitFinal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!placaSelecionada) {
-      alert('Selecione a placa do veículo.');
+    const placaFinal = placaCavalo.trim().toUpperCase();
+    if (!placaFinal) {
+      alert('Por favor, informe a Placa do Veículo Principal (Cavalo / Caminhão).');
       return;
     }
 
     const kmIni = jornadaAtiva?.kmInicial || 50000;
     const kmFim = Number(finalData.kmFinal) || kmIni;
     if (kmFim < kmIni) {
-      alert(`O Km Final (${kmFim}) não pode ser menor que o Km Inicial da jornada (${kmIni}). Verifique o hodômetro.`);
+      alert(`O Km Final (${kmFim}) não pode ser menor que o Km Inicial da jornada (${kmIni}). Verifique o hodômetro no painel.`);
       return;
     }
 
     const kmPercorrido = kmFim - kmIni;
 
-    // Critérios de aprovação do retorno
+    // Critérios de aprovação do encerramento
     let resultado: ChecklistDiario['resultado'] = 'Aprovado - Liberado';
     if (finalData.avariasRetornoDetectadas && finalData.severidadeAvariaRetorno?.includes('Crítica')) {
       resultado = 'Reprovado - Bloqueado';
@@ -314,9 +387,14 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       jornadaId: jornadaAtiva?.jornadaId || `jornada-${Date.now()}`,
       dataHora: new Date().toISOString().slice(0, 16).replace('T', ' '),
       dataHoraRetorno: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      veiculoPlaca: placaSelecionada,
+      veiculoPlaca: placaFinal,
+      placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : (jornadaAtiva?.placaCarreta || undefined),
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
       motoristaCpf: cpfInput,
+      segundoMotoristaNome: modoSegundoMotorista !== 'sem_segundo' && segundoMotoristaNome.trim() ? segundoMotoristaNome.trim() : (jornadaAtiva?.segundoMotoristaNome || undefined),
+      segundoMotoristaCpf: modoSegundoMotorista !== 'sem_segundo' && segundoMotoristaCpf.trim() ? segundoMotoristaCpf.trim() : (jornadaAtiva?.segundoMotoristaCpf || undefined),
+      ajudanteNome: modoAjudante !== 'sem_ajudante' && ajudanteNome.trim() ? ajudanteNome.trim() : (jornadaAtiva?.ajudanteNome || undefined),
+      ajudanteCpf: modoAjudante !== 'sem_ajudante' && ajudanteCpf.trim() ? ajudanteCpf.trim() : (jornadaAtiva?.ajudanteCpf || undefined),
       tipoInspecao: 'Retorno à Base',
       kmInicial: kmIni,
       kmFinal: kmFim,
@@ -332,7 +410,6 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       limpezaCabine: finalData.limpezaFinal,
       nivelCombustivel: finalData.nivelCombustivel,
       nivelArla32: finalData.nivelArla32,
-      // Avarias do retorno
       avariasRetornoDetectadas: finalData.avariasRetornoDetectadas,
       descricaoAvariasRetorno: finalData.avariasRetornoDetectadas ? finalData.descricaoAvariasRetorno : 'Nenhuma avaria ou incidente ocorrido durante o percurso',
       localAvariaRetorno: finalData.avariasRetornoDetectadas ? finalData.localAvariaRetorno : undefined,
@@ -349,9 +426,17 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     setStep('sucesso');
   };
 
+  // Motoristas filtrados para seleção de 2º motorista e ajudante
+  const segundosMotoristasCadastrados = motoristas.filter(
+    (m) => m.cpf.replace(/\D/g, '') !== cpfInput.replace(/\D/g, '')
+  );
+  const ajudantesCadastrados = motoristas.filter(
+    (m) => m.funcao === 'Ajudante Operacional / Transbordo' || m.categoriaCnh === 'Não Aplicável (Ajudante)'
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans selection:bg-emerald-500 selection:text-slate-950">
-      {/* Top Header Mobile-First */}
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans selection:bg-ambipar-500 selection:text-slate-950">
+      {/* Top Header Mobile-First - 100% Autônomo e Seguro */}
       <header className="bg-slate-900 border-b border-slate-800 px-4 py-3.5 sticky top-0 z-30 shadow-md">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -360,10 +445,10 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
             </div>
             <div>
               <div className="text-[10px] uppercase font-bold tracking-widest text-ambipar-400">
-                Portal do Motorista Ambipar
+                Ambipar Logistics • Operação
               </div>
               <h1 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-none">
-                Checklist Diário Operacional
+                Portal do Motorista & Checklists
               </h1>
             </div>
           </div>
@@ -372,20 +457,11 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
             {step !== 'login' && (
               <button
                 onClick={handleLogout}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center gap-1 border border-slate-700 transition"
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 border border-slate-700 transition"
                 title="Sair / Trocar de Motorista"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Trocar CPF</span>
-              </button>
-            )}
-
-            {onExitPortal && (
-              <button
-                onClick={onExitPortal}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[11px] font-medium border border-slate-700 transition"
-              >
-                Voltar à Central
+                <LogOut className="w-3.5 h-3.5 text-amber-400" />
+                <span>Sair / Trocar CPF</span>
               </button>
             )}
           </div>
@@ -407,14 +483,14 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 Identificação do Condutor
               </h2>
               <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                Digite seu CPF cadastrado para iniciar ou finalizar o checklist diário obrigatório de segurança da Ambipar.
+                Digite seu CPF para iniciar a jornada, realizar a inspeção preventiva obrigatória de saída e registrar o retorno.
               </p>
             </div>
 
             <form onSubmit={handleLogin} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                  CPF do Motorista
+                  CPF do Motorista (11 Dígitos)
                 </label>
                 <input
                   type="text"
@@ -426,7 +502,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                   autoFocus
                 />
                 <span className="text-[10px] text-slate-500 mt-1.5 block text-center">
-                  Exigência SASSMAQ • Procedimento Operacional Padrão Ambipar
+                  Procedimento Operacional Padrão • SASSMAQ • Ambipar Response
                 </span>
               </div>
 
@@ -434,25 +510,26 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 type="submit"
                 className="w-full py-3.5 rounded-2xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-ambipar-500/20 active:scale-[0.98] transition"
               >
-                <span>Acessar Checklists</span>
+                <span>Acessar Meus Checklists</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
-            <div className="text-center">
-              <span className="text-[11px] text-slate-500">
-                Central de Monitoramento & Emergências Químicas: <strong className="text-slate-400">0800 117 2020</strong>
+            <div className="text-center space-y-1">
+              <span className="text-[11px] text-slate-500 block">
+                Central de Monitoramento & Emergências Químicas Ambipar:
               </span>
+              <strong className="text-ambipar-400 font-mono text-xs">0800 117 2020 / 0800 777 0728</strong>
             </div>
           </div>
         )}
 
         {/* =========================================================
-            PASSO 2: ESCOLHA DA ETAPA (INICIAL OU FINAL)
+            PASSO 2: SELEÇÃO DE VEÍCULO, TRIPULAÇÃO E ETAPA
             ========================================================= */}
         {step === 'select_tipo' && (
           <div className="space-y-5 my-auto">
-            {/* Card do Motorista Identificado */}
+            {/* Card do Motorista Conectado */}
             <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-ambipar-500/10 text-ambipar-400 flex items-center justify-center border border-ambipar-500/20 font-bold">
@@ -463,7 +540,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                   <h3 className="font-bold text-white text-sm">{motoristaLogado?.nome || nomeMotoristaManual}</h3>
                   <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" />
-                    <span>MOPP & SASSMAQ Ativos</span>
+                    <span>Habilitado & Sincronizado</span>
                   </div>
                 </div>
               </div>
@@ -476,28 +553,245 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
               </button>
             </div>
 
-            {/* Seleção de Veículo */}
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-ambipar-400" />
-                <span>Selecione a Placa do Veículo Operacional:</span>
-              </label>
-              <select
-                value={placaSelecionada}
-                onChange={(e) => setPlacaSelecionada(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-mono font-bold focus:outline-none focus:border-ambipar-500"
-              >
-                {veiculos.map((v) => (
-                  <option key={v.id} value={v.placa}>
-                    {v.placa} - {v.modelo} ({v.tipoEquipamento})
-                  </option>
-                ))}
-              </select>
+            {/* SELEÇÃO E CONFIGURAÇÃO DA FROTA / VEÍCULO / TRIPULAÇÃO */}
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-bold text-ambipar-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck className="w-4 h-4" />
+                  <span>Equipamento & Tripulação da Viagem</span>
+                </span>
+                <span className="text-[10px] text-slate-500">Obrigatório ANTT</span>
+              </div>
+
+              {/* 1. VEÍCULO PRINCIPAL / CAVALO MECÂNICO */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
+                    <span>Placa do Cavalo Mecânico / Caminhão *</span>
+                  </label>
+                  <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setModoCavalo('selecionar')}
+                      className={`px-2 py-0.5 rounded ${modoCavalo === 'selecionar' ? 'bg-ambipar-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                    >
+                      Frota Cadastrada
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoCavalo('digitar')}
+                      className={`px-2 py-0.5 rounded ${modoCavalo === 'digitar' ? 'bg-ambipar-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                    >
+                      Digitar Outra Placa
+                    </button>
+                  </div>
+                </div>
+
+                {modoCavalo === 'selecionar' && veiculos.length > 0 ? (
+                  <select
+                    value={placaCavalo}
+                    onChange={(e) => setPlacaCavalo(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-mono font-bold focus:outline-none focus:border-ambipar-500"
+                  >
+                    {veiculos.map((v) => (
+                      <option key={v.id} value={v.placa}>
+                        {v.placa} - {v.modelo} ({v.tipoEquipamento})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: BRA2E19 ou ABC-1234"
+                    value={placaCavalo}
+                    onChange={(e) => setPlacaCavalo(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-mono font-bold uppercase focus:outline-none focus:border-ambipar-500"
+                  />
+                )}
+              </div>
+
+              {/* 2. PLACA DA CARRETA / SEMIRREBOQUE */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Carreta / Semirreboque / Tanque (Opcional):
+                  </label>
+                  <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => { setModoCarreta('sem_carreta'); setPlacaCarreta(''); }}
+                      className={`px-2 py-0.5 rounded ${modoCarreta === 'sem_carreta' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400'}`}
+                    >
+                      Sem Carreta (Toco/Truck)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoCarreta('digitar')}
+                      className={`px-2 py-0.5 rounded ${modoCarreta === 'digitar' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                    >
+                      Informar Carreta
+                    </button>
+                  </div>
+                </div>
+
+                {modoCarreta === 'digitar' && (
+                  <input
+                    type="text"
+                    placeholder="Placa da Carreta (Ex: REB-9081 ou BXZ1A23)"
+                    value={placaCarreta}
+                    onChange={(e) => setPlacaCarreta(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-cyan-500"
+                  />
+                )}
+              </div>
+
+              {/* 3. SEGUNDO MOTORISTA (REVEZAMENTO) */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-purple-400" />
+                    <span>2º Motorista (Revezamento / Dupla):</span>
+                  </label>
+                  <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => { setModoSegundoMotorista('sem_segundo'); setSegundoMotoristaNome(''); setSegundoMotoristaCpf(''); }}
+                      className={`px-2 py-0.5 rounded ${modoSegundoMotorista === 'sem_segundo' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400'}`}
+                    >
+                      Individual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoSegundoMotorista('selecionar')}
+                      className={`px-2 py-0.5 rounded ${modoSegundoMotorista === 'selecionar' ? 'bg-purple-500 text-white font-bold' : 'text-slate-400'}`}
+                    >
+                      Cadastrado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoSegundoMotorista('digitar')}
+                      className={`px-2 py-0.5 rounded ${modoSegundoMotorista === 'digitar' ? 'bg-purple-500 text-white font-bold' : 'text-slate-400'}`}
+                    >
+                      Avulso
+                    </button>
+                  </div>
+                </div>
+
+                {modoSegundoMotorista === 'selecionar' && (
+                  <select
+                    value={segundoMotoristaNome}
+                    onChange={(e) => {
+                      const sel = motoristas.find((m) => m.nome === e.target.value);
+                      setSegundoMotoristaNome(e.target.value);
+                      if (sel) setSegundoMotoristaCpf(sel.cpf);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="">Selecione o 2º Motorista da lista...</option>
+                    {segundosMotoristasCadastrados.map((m) => (
+                      <option key={m.id} value={m.nome}>
+                        {m.nome} ({m.funcao || 'Motorista'} - CPF: {m.cpf})
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {modoSegundoMotorista === 'digitar' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome Completo do 2º Motorista"
+                      value={segundoMotoristaNome}
+                      onChange={(e) => setSegundoMotoristaNome(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    />
+                    <input
+                      type="text"
+                      placeholder="CPF do 2º Motorista"
+                      value={segundoMotoristaCpf}
+                      onChange={(e) => setSegundoMotoristaCpf(formatCpf(e.target.value))}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 4. AJUDANTE OPERACIONAL */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <HardHat className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Ajudante Operacional / Transbordo:</span>
+                  </label>
+                  <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => { setModoAjudante('sem_ajudante'); setAjudanteNome(''); setAjudanteCpf(''); }}
+                      className={`px-2 py-0.5 rounded ${modoAjudante === 'sem_ajudante' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400'}`}
+                    >
+                      Sem Ajudante
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoAjudante('selecionar')}
+                      className={`px-2 py-0.5 rounded ${modoAjudante === 'selecionar' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                    >
+                      Cadastrado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoAjudante('digitar')}
+                      className={`px-2 py-0.5 rounded ${modoAjudante === 'digitar' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                    >
+                      Avulso
+                    </button>
+                  </div>
+                </div>
+
+                {modoAjudante === 'selecionar' && (
+                  <select
+                    value={ajudanteNome}
+                    onChange={(e) => {
+                      const sel = motoristas.find((m) => m.nome === e.target.value);
+                      setAjudanteNome(e.target.value);
+                      if (sel) setAjudanteCpf(sel.cpf);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="">Selecione o Ajudante da lista...</option>
+                    {(ajudantesCadastrados.length > 0 ? ajudantesCadastrados : motoristas).map((m) => (
+                      <option key={m.id} value={m.nome}>
+                        {m.nome} (CPF: {m.cpf})
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {modoAjudante === 'digitar' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome Completo do Ajudante"
+                      value={ajudanteNome}
+                      onChange={(e) => setAjudanteNome(e.target.value)}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    />
+                    <input
+                      type="text"
+                      placeholder="CPF do Ajudante"
+                      value={ajudanteCpf}
+                      onChange={(e) => setAjudanteCpf(formatCpf(e.target.value))}
+                      className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Status da Jornada Hoje */}
-            {jornadaAtiva ? (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-2">
+            {/* Status da Jornada em Aberto */}
+            {jornadaAtiva && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-2 animate-pulse">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-amber-400" />
                   <span className="font-bold text-xs uppercase tracking-wider">Jornada Ativa em Andamento</span>
@@ -506,13 +800,19 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                   Você iniciou a saída com a placa <strong className="text-white font-mono">{jornadaAtiva.veiculoPlaca}</strong> às {jornadaAtiva.dataHora} com Km Inicial {formatNumber(jornadaAtiva.kmInicial)}.
                 </p>
               </div>
-            ) : null}
+            )}
 
             {/* Botões de Ação para as duas inspeções */}
             <div className="grid grid-cols-1 gap-3">
               {/* Opção 1: Checklist Inicial (Pré-Jornada) */}
               <button
-                onClick={() => setStep('form_inicial')}
+                onClick={() => {
+                  if (!placaCavalo.trim()) {
+                    alert('Informe a placa do veículo antes de prosseguir.');
+                    return;
+                  }
+                  setStep('form_inicial');
+                }}
                 className="p-5 rounded-2xl bg-slate-900 border-2 border-slate-800 hover:border-ambipar-500 text-left transition flex items-center justify-between group active:scale-[0.99]"
               >
                 <div className="space-y-1">
@@ -535,7 +835,13 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
 
               {/* Opção 2: Checklist Final (Retorno) */}
               <button
-                onClick={() => setStep('form_final')}
+                onClick={() => {
+                  if (!placaCavalo.trim()) {
+                    alert('Informe a placa do veículo antes de prosseguir.');
+                    return;
+                  }
+                  setStep('form_final');
+                }}
                 className={`p-5 rounded-2xl border-2 text-left transition flex items-center justify-between group active:scale-[0.99] ${
                   jornadaAtiva
                     ? 'bg-gradient-to-r from-slate-900 to-emerald-950/40 border-emerald-500 shadow-lg shadow-emerald-500/10'
@@ -581,9 +887,49 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 <ArrowLeft className="w-4 h-4" />
                 <span>Voltar</span>
               </button>
-              <span className="text-[11px] font-mono font-bold text-ambipar-400 bg-ambipar-500/10 px-2 py-0.5 rounded border border-ambipar-500/20">
-                Placa: {placaSelecionada}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-bold text-ambipar-400 bg-ambipar-500/10 px-2 py-0.5 rounded border border-ambipar-500/20">
+                  Cavalo: {placaCavalo || 'N/I'}
+                </span>
+                {placaCarreta && (
+                  <span className="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    Carreta: {placaCarreta}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Painel Resumo de Veículo e Tripulação */}
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-ambipar-400" />
+                  <span>Composição da Viagem</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep('select_tipo')}
+                  className="text-[11px] text-ambipar-400 hover:underline flex items-center gap-1"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Modificar Veículo/Tripulação</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                <div>Condutor: <strong className="text-white">{motoristaLogado?.nome || nomeMotoristaManual}</strong></div>
+                <div>Cavalo: <strong className="font-mono text-ambipar-400">{placaCavalo}</strong></div>
+                {placaCarreta ? (
+                  <div>Carreta: <strong className="font-mono text-cyan-400">{placaCarreta}</strong></div>
+                ) : (
+                  <div>Carreta: <span className="text-slate-500">Sem Carreta</span></div>
+                )}
+                {segundoMotoristaNome ? (
+                  <div>2º Condutor: <strong className="text-purple-300">{segundoMotoristaNome}</strong></div>
+                ) : null}
+                {ajudanteNome ? (
+                  <div>Ajudante: <strong className="text-amber-300">{ajudanteNome}</strong></div>
+                ) : null}
+              </div>
             </div>
 
             <div>
@@ -789,9 +1135,49 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 <ArrowLeft className="w-4 h-4" />
                 <span>Voltar</span>
               </button>
-              <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                Placa: {placaSelecionada}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  Cavalo: {placaCavalo}
+                </span>
+                {placaCarreta && (
+                  <span className="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    Carreta: {placaCarreta}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Painel Resumo de Veículo e Tripulação */}
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-emerald-400" />
+                  <span>Composição da Viagem</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep('select_tipo')}
+                  className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Modificar Veículo/Tripulação</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                <div>Condutor: <strong className="text-white">{motoristaLogado?.nome || nomeMotoristaManual}</strong></div>
+                <div>Cavalo: <strong className="font-mono text-emerald-400">{placaCavalo}</strong></div>
+                {placaCarreta ? (
+                  <div>Carreta: <strong className="font-mono text-cyan-400">{placaCarreta}</strong></div>
+                ) : (
+                  <div>Carreta: <span className="text-slate-500">Sem Carreta</span></div>
+                )}
+                {segundoMotoristaNome ? (
+                  <div>2º Condutor: <strong className="text-purple-300">{segundoMotoristaNome}</strong></div>
+                ) : null}
+                {ajudanteNome ? (
+                  <div>Ajudante: <strong className="text-amber-300">{ajudanteNome}</strong></div>
+                ) : null}
+              </div>
             </div>
 
             <div>
@@ -838,11 +1224,47 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 </div>
               </div>
 
+              {/* Níveis Finais */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+                <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Fuel className="w-4 h-4" />
+                  2. Nível de Combustível no Retorno
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Nível de Combustível</label>
+                    <select
+                      value={finalData.nivelCombustivel}
+                      onChange={(e) => setFinalData({ ...finalData, nivelCombustivel: e.target.value as any })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    >
+                      <option value="Cheio (100%)">Cheio (100%)</option>
+                      <option value="3/4">3/4 Tanque</option>
+                      <option value="1/2">1/2 Meio Tanque</option>
+                      <option value="1/4">1/4 Tanque</option>
+                      <option value="Reserva">Reserva</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Nível de Arla 32</label>
+                    <select
+                      value={finalData.nivelArla32}
+                      onChange={(e) => setFinalData({ ...finalData, nivelArla32: e.target.value as any })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    >
+                      <option value="Normal (>50%)">Normal (&gt;50%)</option>
+                      <option value="Atenção (<25%)">Atenção (&lt;25%)</option>
+                      <option value="Crítico">Crítico</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               {/* Inspeção do Encerramento */}
               <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
                 <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4" />
-                  2. Condições de Encerramento do Veículo
+                  3. Condições de Encerramento do Veículo
                 </span>
 
                 {[
@@ -871,7 +1293,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
               <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
                 <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4" />
-                  3. Relato de Avarias & Incidentes no Fim da Jornada
+                  4. Relato de Avarias & Incidentes no Fim da Jornada
                 </span>
 
                 <div className="space-y-2">
@@ -1010,13 +1432,31 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                   <strong className="text-white">{ultimoChecklistCriado.tipoInspecao}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase block">Veículo:</span>
+                  <span className="text-[10px] text-slate-500 uppercase block">Cavalo Mecânico:</span>
                   <strong className="font-mono text-ambipar-400">{ultimoChecklistCriado.veiculoPlaca}</strong>
                 </div>
+                {ultimoChecklistCriado.placaCarreta && (
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">Carreta / Tanque:</span>
+                    <strong className="font-mono text-cyan-400">{ultimoChecklistCriado.placaCarreta}</strong>
+                  </div>
+                )}
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase block">Condutor:</span>
                   <span className="text-slate-300 truncate block">{ultimoChecklistCriado.motoristaNome}</span>
                 </div>
+                {ultimoChecklistCriado.segundoMotoristaNome && (
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">2º Condutor:</span>
+                    <span className="text-purple-300 truncate block">{ultimoChecklistCriado.segundoMotoristaNome}</span>
+                  </div>
+                )}
+                {ultimoChecklistCriado.ajudanteNome && (
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">Ajudante:</span>
+                    <span className="text-amber-300 truncate block">{ultimoChecklistCriado.ajudanteNome}</span>
+                  </div>
+                )}
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase block">Resultado:</span>
                   <span className="font-bold text-emerald-400">{ultimoChecklistCriado.resultado}</span>
@@ -1034,14 +1474,12 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                 Voltar ao Menu Principal
               </button>
 
-              {onExitPortal && (
-                <button
-                  onClick={onExitPortal}
-                  className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs border border-slate-800 transition"
-                >
-                  Fechar Portal do Motorista
-                </button>
-              )}
+              <button
+                onClick={handleLogout}
+                className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs border border-slate-800 transition"
+              >
+                Encerrar Sessão do Motorista
+              </button>
             </div>
           </div>
         )}

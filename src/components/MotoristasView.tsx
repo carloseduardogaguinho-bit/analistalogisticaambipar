@@ -5,6 +5,7 @@ import {
   StatusMotorista,
   RegimeContratacaoMotorista,
   CategoriaCnh,
+  FuncaoTripulante,
 } from '../types';
 import {
   Users,
@@ -61,6 +62,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('TODAS');
   const [regimeFilter, setRegimeFilter] = useState<string>('TODOS');
+  const [funcaoFilter, setFuncaoFilter] = useState<string>('TODAS');
   const [viewMode, setViewMode] = useState<'grid' | 'tabela'>('grid');
 
   // Modal States
@@ -72,6 +74,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
   // Form State
   const initialFormState: Partial<Motorista> = {
     nome: '',
+    funcao: 'Motorista Titular' as FuncaoTripulante,
     cpf: '',
     rg: '',
     telefone: '',
@@ -168,6 +171,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
       m.cnh.includes(searchTerm) ||
       (m.matricula && m.matricula.toLowerCase().includes(searchTerm.toLowerCase())) ||
       m.baseOperacional.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.funcao && m.funcao.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (m.veiculoFixoPlaca && m.veiculoFixoPlaca.toLowerCase().includes(searchTerm.toLowerCase()));
 
     let matchesStatus = true;
@@ -183,11 +187,20 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
     let matchesRegime = true;
     if (regimeFilter !== 'TODOS') matchesRegime = m.regimeContratacao === regimeFilter;
 
-    return matchesSearch && matchesStatus && matchesCategoria && matchesRegime;
+    let matchesFuncao = true;
+    if (funcaoFilter !== 'TODAS') {
+      const func = m.funcao || 'Motorista Titular';
+      matchesFuncao = func === funcaoFilter;
+    }
+
+    return matchesSearch && matchesStatus && matchesCategoria && matchesRegime && matchesFuncao;
   });
 
   // KPI Calculations
   const totalMotoristas = motoristas.length;
+  const titularesCount = motoristas.filter((m) => !m.funcao || m.funcao === 'Motorista Titular').length;
+  const segundoMotoristaCount = motoristas.filter((m) => m.funcao === 'Segundo Motorista (Revezamento)').length;
+  const ajudantesCount = motoristas.filter((m) => m.funcao === 'Ajudante Operacional / Transbordo').length;
   const ativosCount = motoristas.filter((m) => m.status === 'Ativo' && !hasCriticalExpiredDoc(m)).length;
   const vencidosCount = motoristas.filter((m) => hasCriticalExpiredDoc(m) || m.status === 'Bloqueado (Documento Vencido)').length;
   const alertasVencimentoCount = motoristas.filter((m) => hasWarningDoc(m) && !hasCriticalExpiredDoc(m)).length;
@@ -207,19 +220,42 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
 
   const handleOpenEditModal = (m: Motorista) => {
     setEditingId(m.id);
-    setFormData({ ...m });
+    setFormData({ ...m, funcao: m.funcao || 'Motorista Titular' });
     setActiveFormTab('pessoal');
     setIsModalOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nome || !formData.cpf || !formData.cnh) {
-      alert('Preencha os campos obrigatórios: Nome Completo, CPF e CNH.');
+    const isAjudante = formData.funcao === 'Ajudante Operacional / Transbordo';
+
+    if (!formData.nome || !formData.cpf) {
+      alert('Preencha os campos obrigatórios: Nome Completo e CPF.');
       return;
     }
 
-    const isBlocked = hasCriticalExpiredDoc(formData as Motorista);
+    if (!isAjudante && !formData.cnh) {
+      alert('Para motoristas condutores (Titular ou 2º Motorista), a CNH é obrigatória.');
+      return;
+    }
+
+    const cnhFinal = isAjudante ? (formData.cnh?.trim() || 'NÃO APLICÁVEL (AJUDANTE)') : formData.cnh!.trim();
+    const categoriaFinal = isAjudante ? ('Não Aplicável (Ajudante)' as CategoriaCnh) : ((formData.categoriaCnh || 'E') as CategoriaCnh);
+    const validadeCnhFinal = isAjudante ? (formData.validadeCnh || '2099-12-31') : (formData.validadeCnh || '');
+    const validadeMoppFinal = isAjudante ? (formData.validadeMopp || '2099-12-31') : (formData.validadeMopp || '');
+    const validadeToxicoFinal = isAjudante ? (formData.validadeToxico || '2099-12-31') : (formData.validadeToxico || '');
+
+    const tempMotoristaParaVerificacao: Motorista = {
+      ...(formData as Motorista),
+      funcao: formData.funcao || 'Motorista Titular',
+      cnh: cnhFinal,
+      categoriaCnh: categoriaFinal,
+      validadeCnh: validadeCnhFinal,
+      validadeMopp: validadeMoppFinal,
+      validadeToxico: validadeToxicoFinal,
+    };
+
+    const isBlocked = !isAjudante && hasCriticalExpiredDoc(tempMotoristaParaVerificacao);
     const finalStatus: StatusMotorista = isBlocked
       ? 'Bloqueado (Documento Vencido)'
       : (formData.status as StatusMotorista) || 'Ativo';
@@ -229,6 +265,12 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
       const updatedMot: Motorista = {
         ...(formData as Motorista),
         id: editingId,
+        funcao: formData.funcao || 'Motorista Titular',
+        cnh: cnhFinal,
+        categoriaCnh: categoriaFinal,
+        validadeCnh: validadeCnhFinal,
+        validadeMopp: validadeMoppFinal,
+        validadeToxico: validadeToxicoFinal,
         status: finalStatus,
       };
       if (onUpdateMotorista) {
@@ -243,12 +285,13 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
         ...(formData as Motorista),
         id: `mot-${Date.now()}`,
         nome: formData.nome.trim(),
+        funcao: formData.funcao || 'Motorista Titular',
         cpf: formData.cpf.trim(),
-        cnh: formData.cnh.trim(),
-        categoriaCnh: (formData.categoriaCnh || 'E') as CategoriaCnh,
-        validadeCnh: formData.validadeCnh || '',
-        validadeMopp: formData.validadeMopp || '',
-        validadeToxico: formData.validadeToxico || '',
+        cnh: cnhFinal,
+        categoriaCnh: categoriaFinal,
+        validadeCnh: validadeCnhFinal,
+        validadeMopp: validadeMoppFinal,
+        validadeToxico: validadeToxicoFinal,
         baseOperacional: formData.baseOperacional || 'Base Regional Paulínia',
         status: finalStatus,
         mediaConsumoGeral: Number(formData.mediaConsumoGeral) || 2.65,
@@ -365,14 +408,16 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-semibold">Efetivo de Condutores</span>
+            <span className="font-semibold">Efetivo de Tripulação</span>
             <Users className="w-4 h-4 text-ambipar-400" />
           </div>
           <div className="text-2xl font-black text-white">{totalMotoristas}</div>
-          <div className="text-[11px] text-slate-500 flex items-center gap-2">
-            <span className="text-emerald-400 font-bold">{cltCount} CLT Ambipar</span>
+          <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-1.5">
+            <span className="text-cyan-400 font-bold">{titularesCount} Titulares</span>
             <span>&bull;</span>
-            <span>{totalMotoristas - cltCount} Agregados/Terc.</span>
+            <span className="text-purple-400 font-bold">{segundoMotoristaCount} 2º Motoristas</span>
+            <span>&bull;</span>
+            <span className="text-amber-400 font-bold">{ajudantesCount} Ajudantes</span>
           </div>
         </div>
 
@@ -416,7 +461,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
-            placeholder="Buscar por nome, CPF, CNH, matrícula, base ou placa fixa..."
+            placeholder="Buscar por nome, CPF, CNH, função, matrícula, base ou placa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-ambipar-500 transition"
@@ -424,6 +469,21 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* Filtro por Função Operacional */}
+          <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700/80 rounded-xl px-2.5 py-1">
+            <Users className="w-3.5 h-3.5 text-ambipar-400" />
+            <select
+              value={funcaoFilter}
+              onChange={(e) => setFuncaoFilter(e.target.value)}
+              className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="TODAS" className="bg-slate-900 text-white">Função: Todas</option>
+              <option value="Motorista Titular" className="bg-slate-900 text-cyan-400">Motoristas Titulares</option>
+              <option value="Segundo Motorista (Revezamento)" className="bg-slate-900 text-purple-400">2º Motoristas (Revezamento)</option>
+              <option value="Ajudante Operacional / Transbordo" className="bg-slate-900 text-amber-400">Ajudantes Operacionais</option>
+            </select>
+          </div>
+
           <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700/80 rounded-xl px-2.5 py-1">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select
@@ -451,6 +511,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
               <option value="E" className="bg-slate-900 text-white">Cat. E (Articulados)</option>
               <option value="D" className="bg-slate-900 text-white">Cat. D (Pesados)</option>
               <option value="C" className="bg-slate-900 text-white">Cat. C (Médios)</option>
+              <option value="Não Aplicável (Ajudante)" className="bg-slate-900 text-amber-400">Não Aplicável (Ajudante)</option>
             </select>
           </div>
 
@@ -538,18 +599,45 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-ambipar-600 via-emerald-600 to-teal-800 flex items-center justify-center font-black text-slate-950 text-sm shadow-md">
-                          {m.nome.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-slate-950 text-sm shadow-md ${
+                          m.funcao === 'Segundo Motorista (Revezamento)'
+                            ? 'bg-gradient-to-br from-purple-500 to-indigo-700 text-white'
+                            : m.funcao === 'Ajudante Operacional / Transbordo'
+                            ? 'bg-gradient-to-br from-amber-500 to-orange-700 text-slate-950'
+                            : 'bg-gradient-to-br from-ambipar-500 via-emerald-600 to-teal-800 text-slate-950'
+                        }`}>
+                          {m.funcao === 'Ajudante Operacional / Transbordo' ? (
+                            <HardHat className="w-6 h-6 text-slate-950" />
+                          ) : (
+                            m.nome.split(' ').map((n) => n[0]).slice(0, 2).join('')
+                          )}
                         </div>
                         <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-slate-950 px-1 py-0.2 rounded border border-slate-700 text-amber-400">
-                          Cat.{m.categoriaCnh}
+                          {m.funcao === 'Ajudante Operacional / Transbordo' ? 'Ajud.' : `Cat.${m.categoriaCnh}`}
                         </span>
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
-                          <span>{m.nome}</span>
-                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-white text-sm tracking-tight">
+                            {m.nome}
+                          </h4>
+                          {m.funcao === 'Segundo Motorista (Revezamento)' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                              2º Motorista
+                            </span>
+                          )}
+                          {m.funcao === 'Ajudante Operacional / Transbordo' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              Ajudante
+                            </span>
+                          )}
+                          {(!m.funcao || m.funcao === 'Motorista Titular') && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                              Titular
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                           <span className="font-mono">{m.matricula || 'MAT-AMB'}</span>
                           <span>&bull;</span>
@@ -934,8 +1022,68 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
               {/* TAB 1: Pessoal & Emergência */}
               {activeFormTab === 'pessoal' && (
                 <div className="space-y-3">
+                  {/* Seleção de Função Operacional */}
                   <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Nome Completo do Condutor *</label>
+                    <label className="block text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-ambipar-400" />
+                        <span>Função Operacional do Tripulante *</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal">Classificação na Escala & Viagens</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, funcao: 'Motorista Titular', categoriaCnh: formData.categoriaCnh === 'Não Aplicável (Ajudante)' ? 'E' : formData.categoriaCnh })}
+                        className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                          formData.funcao === 'Motorista Titular' || !formData.funcao
+                            ? 'bg-cyan-500/20 border-cyan-500 text-white shadow-sm'
+                            : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Truck className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Motorista Titular</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-1">Condutor principal (CNH C/D/E + MOPP)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, funcao: 'Segundo Motorista (Revezamento)', categoriaCnh: formData.categoriaCnh === 'Não Aplicável (Ajudante)' ? 'E' : formData.categoriaCnh })}
+                        className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                          formData.funcao === 'Segundo Motorista (Revezamento)'
+                            ? 'bg-purple-500/20 border-purple-500 text-white shadow-sm'
+                            : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <Users className="w-3.5 h-3.5 text-purple-400" />
+                          <span>2º Motorista (Revezamento)</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-1">Dupla de viagem (CNH C/D/E + MOPP)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, funcao: 'Ajudante Operacional / Transbordo', categoriaCnh: 'Não Aplicável (Ajudante)', cnh: formData.cnh || 'ISENTO (AJUDANTE)' })}
+                        className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                          formData.funcao === 'Ajudante Operacional / Transbordo'
+                            ? 'bg-amber-500/20 border-amber-500 text-white shadow-sm'
+                            : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <HardHat className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Ajudante Operacional</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-1">Carga/descarga/apoio (CNH isenta)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Nome Completo do Tripulante *</label>
                     <input
                       type="text"
                       required
@@ -1149,13 +1297,24 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
               {/* TAB 3: Habilitação & CNH */}
               {activeFormTab === 'cnh' && (
                 <div className="space-y-3">
+                  {formData.funcao === 'Ajudante Operacional / Transbordo' && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                      <HardHat className="w-5 h-5 shrink-0 text-amber-400" />
+                      <span>
+                        <strong>Ajudante Operacional:</strong> CNH de condução é <strong>isenta/opcional</strong>. Caso o ajudante não dirija veículos, pode deixar o campo em branco ou preenchido como "Isento".
+                      </span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1">Número CNH *</label>
+                      <label className="block text-slate-400 font-semibold mb-1">
+                        Número CNH {formData.funcao === 'Ajudante Operacional / Transbordo' ? '(Opcional)' : '*'}
+                      </label>
                       <input
                         type="text"
-                        required
-                        placeholder="Ex: 04829104812"
+                        required={formData.funcao !== 'Ajudante Operacional / Transbordo'}
+                        placeholder={formData.funcao === 'Ajudante Operacional / Transbordo' ? 'Isento / Opcional' : 'Ex: 04829104812'}
                         value={formData.cnh}
                         onChange={(e) => setFormData({ ...formData, cnh: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs"
@@ -1171,13 +1330,16 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
                         <option value="E">Categoria E (Carretas pesadas / Articulados)</option>
                         <option value="D">Categoria D (Caminhões pesados / VUCs)</option>
                         <option value="C">Categoria C (Caminhões médios)</option>
+                        <option value="Não Aplicável (Ajudante)">Não Aplicável (Ajudante Operacional)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1">Validade CNH *</label>
+                      <label className="block text-slate-400 font-semibold mb-1">
+                        Validade CNH {formData.funcao === 'Ajudante Operacional / Transbordo' ? '(Opcional)' : '*'}
+                      </label>
                       <input
                         type="date"
-                        required
+                        required={formData.funcao !== 'Ajudante Operacional / Transbordo'}
                         value={formData.validadeCnh}
                         onChange={(e) => setFormData({ ...formData, validadeCnh: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-mono"
@@ -1239,16 +1401,25 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
               {/* TAB 4: Certificados Obrigatórios & Saúde (MOPP / SASSMAQ) */}
               {activeFormTab === 'certificados' && (
                 <div className="space-y-3">
+                  {formData.funcao === 'Ajudante Operacional / Transbordo' && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                      <HardHat className="w-5 h-5 shrink-0 text-amber-400" />
+                      <span>
+                        <strong>Ajudante Operacional:</strong> Curso MOPP de motorista não é obrigatório. Treinamentos de NR-20, NR-35 e ASO são recomendados para trabalho operacional.
+                      </span>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
                       <label className="block text-slate-300 font-bold text-xs flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                        <span>Validade Curso MOPP (Resíduos Perigosos) *</span>
+                        <span>Validade Curso MOPP (Resíduos Perigosos) {formData.funcao === 'Ajudante Operacional / Transbordo' ? '(Opcional)' : '*'}</span>
                       </label>
-                      <p className="text-[10px] text-slate-500">Obrigatório Resolução CONTRAN para químicos e inflamáveis</p>
+                      <p className="text-[10px] text-slate-500">Obrigatório Resolução CONTRAN para condutores de químicos</p>
                       <input
                         type="date"
-                        required
+                        required={formData.funcao !== 'Ajudante Operacional / Transbordo'}
                         value={formData.validadeMopp}
                         onChange={(e) => setFormData({ ...formData, validadeMopp: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs font-mono mt-1"
@@ -1258,12 +1429,12 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
                     <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1">
                       <label className="block text-slate-300 font-bold text-xs flex items-center gap-1.5">
                         <Activity className="w-4 h-4 text-cyan-400" />
-                        <span>Validade Exame Toxicológico Periódico *</span>
+                        <span>Validade Exame Toxicológico {formData.funcao === 'Ajudante Operacional / Transbordo' ? '(Opcional)' : '*'}</span>
                       </label>
-                      <p className="text-[10px] text-slate-500">Exigência Lei 13.103/15 (Renovação a cada 2 anos e meio)</p>
+                      <p className="text-[10px] text-slate-500">Exigência Lei 13.103/15 para motoristas profissionais C, D e E</p>
                       <input
                         type="date"
-                        required
+                        required={formData.funcao !== 'Ajudante Operacional / Transbordo'}
                         value={formData.validadeToxico}
                         onChange={(e) => setFormData({ ...formData, validadeToxico: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs font-mono mt-1"
