@@ -367,13 +367,28 @@ export interface Manutencao {
   responsavelAprovacao: string;
 }
 
+export type TipoInspecaoChecklist = 'Saída para Viagem' | 'Retorno à Base';
+export type ResultadoChecklist = 'Aprovado - Liberado' | 'Aprovado com Restrição Leve' | 'Reprovado - Bloqueado';
+export type SeveridadeAvaria = 'Nenhuma' | 'Leve (Apenas Visual/Estética)' | 'Média (Requer Atenção em Breve)' | 'Crítica / Grave (Bloqueia Veículo)';
+export type NivelTanque = 'Cheio (100%)' | '3/4' | '1/2' | '1/4' | 'Reserva';
+
 export interface ChecklistDiario {
   id: string;
+  jornadaId?: string; // ID da jornada para parear Saída e Retorno
   dataHora: string;
+  dataHoraRetorno?: string;
   veiculoPlaca: string;
   motoristaNome: string;
+  motoristaCpf?: string;
+  motoristaTelefone?: string;
+  tipoInspecao: TipoInspecaoChecklist;
+
+  // Quilometragem & Odômetro
   kmInicial: number;
-  tipoInspecao: 'Saída para Viagem' | 'Retorno à Base';
+  kmFinal?: number;
+  kmPercorrido?: number;
+
+  // Itens de Inspeção de Segurança SASSMAQ / Ambipar Response
   pneusPressaoEEstado: boolean;
   freiosEstacionamentoEServico: boolean;
   luzesESinalizacao: boolean;
@@ -382,8 +397,32 @@ export interface ChecklistDiario {
   vazamentoFluidos: boolean;
   documentacaoMTRCIVCIPP: boolean;
   tacografoDiscoOuDigital: boolean;
-  resultado: 'Aprovado - Liberado' | 'Aprovado com Restrição Leve' | 'Reprovado - Bloqueado';
+  episObrigatorios?: boolean;
+  niveisOleoRadiador?: boolean;
+  limpezaCabine?: boolean;
+
+  // Níveis de Fluidos
+  nivelCombustivel?: NivelTanque;
+  nivelArla32?: 'Normal (>50%)' | 'Atenção (<25%)' | 'Crítico';
+
+  // Registro Detalhado de Avarias (Início da Jornada)
+  possuiAvarias?: boolean;
+  descricaoAvarias?: string;
+  localAvaria?: string;
+  severidadeAvaria?: SeveridadeAvaria;
+
+  // Registro Detalhado de Avarias (Fim da Jornada / Retorno)
+  avariasRetornoDetectadas?: boolean;
+  descricaoAvariasRetorno?: string;
+  localAvariaRetorno?: string;
+  severidadeAvariaRetorno?: SeveridadeAvaria;
+
+  // Parecer Operacional
+  resultado: ResultadoChecklist;
+  motivoReprovacao?: string;
   observacoes?: string;
+  assinaturaDigitalMotorista?: string;
+  statusJornada?: 'Em Jornada' | 'Jornada Concluída';
 }
 
 export interface Abastecimento {

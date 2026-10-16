@@ -77,11 +77,22 @@ import { CalculadoraFreteView } from './components/CalculadoraFreteView';
 import { RelatorioView } from './components/RelatorioView';
 import { PortalFiscalView } from './components/PortalFiscalView';
 import { SupabaseAuthModal } from './components/SupabaseAuthModal';
+import { PortalMotoristaChecklist } from './components/PortalMotoristaChecklist';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+  const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        window.location.search.includes('portal=motorista') ||
+        window.location.search.includes('motorista=true') ||
+        window.location.hash.includes('motorista')
+      );
+    }
+    return false;
+  });
 
   // States
   const [viagens, setViagens] = useState<Viagem[]>([]);
@@ -340,11 +351,49 @@ export const App: React.FC = () => {
   const handleAddChecklist = (chk: ChecklistDiario) => {
     setChecklists((prev) => [chk, ...prev]);
 
+    // Atualiza odômetro do veículo conforme o momento da inspeção
+    if (chk.kmFinal) {
+      setVeiculos((prev) =>
+        prev.map((v) =>
+          v.placa === chk.veiculoPlaca && chk.kmFinal! > v.odometroAtualKm
+            ? { ...v, odometroAtualKm: chk.kmFinal! }
+            : v
+        )
+      );
+    } else if (chk.kmInicial) {
+      setVeiculos((prev) =>
+        prev.map((v) =>
+          v.placa === chk.veiculoPlaca && chk.kmInicial > v.odometroAtualKm
+            ? { ...v, odometroAtualKm: chk.kmInicial }
+            : v
+        )
+      );
+    }
+
     // Se reprovado, bloqueia o veículo
     if (chk.resultado === 'Reprovado - Bloqueado') {
       setVeiculos((prev) =>
         prev.map((v) => (v.placa === chk.veiculoPlaca ? { ...v, status: 'Em Manutenção' } : v))
       );
+    }
+
+    // Se houver avarias críticas registradas, gera ocorrência operacional automática
+    if (
+      (chk.possuiAvarias && chk.severidadeAvaria?.includes('Crítica')) ||
+      (chk.avariasRetornoDetectadas && chk.severidadeAvariaRetorno?.includes('Crítica'))
+    ) {
+      const novaOcorrencia: Ocorrencia = {
+        id: `oco-chk-${Date.now()}`,
+        viagemId: '',
+        codigoViagem: `FROTA ${chk.veiculoPlaca}`,
+        dataHora: chk.dataHora,
+        tipo: 'Problema Mecânico',
+        severidade: 'Crítica (Emergência)',
+        descricao: `[AVARIA CRÍTICA NO CHECKLIST] Placa: ${chk.veiculoPlaca} | Condutor: ${chk.motoristaNome} | Relato: ${chk.descricaoAvarias || chk.descricaoAvariasRetorno}`,
+        status: 'Aberta',
+        responsavelTratativa: 'Oficina / Gestão de Frotas Ambipar',
+      };
+      setOcorrencias((prev) => [novaOcorrencia, ...prev]);
     }
 
     const client = getSupabaseClient();
@@ -587,6 +636,26 @@ export const App: React.FC = () => {
   const ocorrenciasAbertasCount = ocorrencias.filter((o) => o.status !== 'Concluída').length;
   const manutencoesPendentesCount = manutencoes.filter((m) => m.status === 'Agendada' || m.status === 'Em Execução').length;
 
+  if (isPortalMotorista) {
+    return (
+      <PortalMotoristaChecklist
+        veiculos={veiculos}
+        motoristas={motoristas}
+        checklists={checklists}
+        onAddChecklist={handleAddChecklist}
+        onExitPortal={() => {
+          setIsPortalMotorista(false);
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('portal');
+            url.searchParams.delete('motorista');
+            window.history.pushState({}, '', url.pathname);
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
       {/* Top Navbar */}
@@ -596,6 +665,14 @@ export const App: React.FC = () => {
         ocorrenciasCount={ocorrenciasAbertasCount}
         isSupabaseConnected={isSupabaseConnected}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        onOpenPortalMotorista={() => {
+          setIsPortalMotorista(true);
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('portal', 'motorista');
+            window.history.pushState({}, '', url.toString());
+          }
+        }}
       />
 
       {/* Main Container */}
@@ -668,6 +745,14 @@ export const App: React.FC = () => {
               veiculos={veiculos}
               motoristas={motoristas}
               onAddChecklist={handleAddChecklist}
+              onOpenPortalMotorista={() => {
+                setIsPortalMotorista(true);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('portal', 'motorista');
+                  window.history.pushState({}, '', url.toString());
+                }
+              }}
             />
           )}
 

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Truck, ShieldCheck, RefreshCw, GitBranch, Bell, Database, Trash2 } from 'lucide-react';
+import { Truck, ShieldCheck, RefreshCw, GitBranch, Bell, Database, Trash2, Smartphone } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -7,6 +6,7 @@ interface NavbarProps {
   ocorrenciasCount: number;
   isSupabaseConnected: boolean;
   onOpenSupabaseModal: () => void;
+  onOpenPortalMotorista?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,6 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ocorrenciasCount,
   isSupabaseConnected,
   onOpenSupabaseModal,
+  onOpenPortalMotorista,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 lg:px-8 flex items-center justify-between">
@@ -65,6 +66,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right User & Actions */}
       <div className="flex items-center gap-3">
+        {onOpenPortalMotorista && (
+          <button
+            onClick={onOpenPortalMotorista}
+            title="Abrir Portal do Motorista para Checklist Diário (Mobile/Totem)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Portal do Motorista</span>
+          </button>
+        )}
+
         <button
           onClick={onRefresh}
           title="Recarregar dados"
