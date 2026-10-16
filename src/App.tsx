@@ -385,6 +385,12 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleDeleteAbastecimento = (id: string) => {
+    if (confirm('Deseja excluir este registro de abastecimento?')) {
+      setAbastecimentos((prev) => prev.filter((a) => a.id !== id));
+    }
+  };
+
   // Handlers: Fiscal
   const handleAddCte = (newCte: CteDocumento) => {
     setCtes((prev) => [newCte, ...prev]);
@@ -652,6 +658,7 @@ export const App: React.FC = () => {
               veiculos={veiculos}
               motoristas={motoristas}
               onAddAbastecimento={handleAddAbastecimento}
+              onDeleteAbastecimento={handleDeleteAbastecimento}
             />
           )}
 

@@ -227,6 +227,16 @@ export interface Abastecimento {
   posto: string;
   kmRodadosDesdeUltimo?: number;
   mediaKmL?: number; // km por litro
+  precoLitro?: number; // R$/L
+  custoPorKm?: number; // R$/km
+  numeroNotaFiscal?: string;
+  tipoPosto?: 'Interno (Base Ambipar)' | 'Rede Credenciada (Ticket Log / Sem Parar)' | 'Posto Rodovia';
+  tanqueCheio?: boolean;
+  arla32Litros?: number;
+  arla32Valor?: number;
+  anomaliaDetectada?: boolean;
+  motivoAnomalia?: string;
+  observacoes?: string;
 }
 
 export interface SupabaseConfig {
