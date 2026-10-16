@@ -19,6 +19,7 @@ import {
   CotacaoManutencao,
   PropostaOficina,
   StatusMedicao,
+  CertificadoDestinacaoFinalCDF,
 } from './types';
 
 import {
@@ -50,6 +51,8 @@ import {
   saveStoredMedicoes,
   getStoredCotacoes,
   saveStoredCotacoes,
+  getStoredCdfs,
+  saveStoredCdfs,
 } from './utils/storage';
 import { ParsedSefazXml } from './utils/sebraeUtils';
 
@@ -95,6 +98,7 @@ export const App: React.FC = () => {
   const [empresaFiscal, setEmpresaFiscal] = useState<EmpresaFiscalConfig>(getStoredEmpresaFiscal());
   const [medicoes, setMedicoes] = useState<MedicaoContrato[]>([]);
   const [cotacoes, setCotacoes] = useState<CotacaoManutencao[]>([]);
+  const [cdfs, setCdfs] = useState<CertificadoDestinacaoFinalCDF[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   // Initial Load
@@ -116,6 +120,7 @@ export const App: React.FC = () => {
     setEmpresaFiscal(getStoredEmpresaFiscal());
     setMedicoes(getStoredMedicoes());
     setCotacoes(getStoredCotacoes());
+    setCdfs(getStoredCdfs());
     setLoaded(true);
 
     // If Supabase is connected, try to sync from cloud
@@ -168,6 +173,7 @@ export const App: React.FC = () => {
   useEffect(() => { if (loaded) saveStoredEmpresaFiscal(empresaFiscal); }, [empresaFiscal, loaded]);
   useEffect(() => { if (loaded) saveStoredMedicoes(medicoes); }, [medicoes, loaded]);
   useEffect(() => { if (loaded) saveStoredCotacoes(cotacoes); }, [cotacoes, loaded]);
+  useEffect(() => { if (loaded) saveStoredCdfs(cdfs); }, [cdfs, loaded]);
 
   // Handlers: Viagens
   const handleAddViagem = (newTrip: Viagem) => {
@@ -575,6 +581,7 @@ export const App: React.FC = () => {
     setEmpresaFiscal(getStoredEmpresaFiscal());
     setMedicoes(getStoredMedicoes());
     setCotacoes(getStoredCotacoes());
+    setCdfs(getStoredCdfs());
   };
 
   const ocorrenciasAbertasCount = ocorrencias.filter((o) => o.status !== 'Concluída').length;
@@ -698,12 +705,20 @@ export const App: React.FC = () => {
             <MtrView
               mtrs={mtrs}
               licencas={licencas}
+              cdfs={cdfs}
+              veiculos={veiculos}
+              motoristas={motoristas}
               onAddMtr={(m) => setMtrs((prev) => [m, ...prev])}
               onUpdateMtrStatus={(id, status, cdf) =>
                 setMtrs((prev) =>
                   prev.map((m) => (m.id === id ? { ...m, status, numeroCDF: cdf || m.numeroCDF } : m))
                 )
               }
+              onDeleteMtr={(id) => setMtrs((prev) => prev.filter((m) => m.id !== id))}
+              onAddCdf={(newCdf) => setCdfs((prev) => [newCdf, ...prev])}
+              onDeleteCdf={(id) => setCdfs((prev) => prev.filter((c) => c.id !== id))}
+              onAddLicenca={(newLic) => setLicencas((prev) => [newLic, ...prev])}
+              onDeleteLicenca={(id) => setLicencas((prev) => prev.filter((l) => l.id !== id))}
             />
           )}
 

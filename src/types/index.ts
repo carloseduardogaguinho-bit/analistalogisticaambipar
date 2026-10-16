@@ -66,29 +66,164 @@ export interface Viagem {
   observacoes?: string;
 }
 
+export type SistemaEmissorMtr = 
+  | 'SINIR (Federal)' 
+  | 'SIGOR (CETESB SP)' 
+  | 'FEPAM (RS)' 
+  | 'INEA (RJ)' 
+  | 'FEAM (MG)' 
+  | 'IMA (SC)' 
+  | 'Outro Estadual';
+
+export type EstadoFisicoResiduo = 
+  | 'Líquido' 
+  | 'Sólido' 
+  | 'Pastoso / Semissólido' 
+  | 'Lodo / Sedimento' 
+  | 'Granel';
+
+export type TipoAcondicionamentoResiduo = 
+  | 'Carreta Tanque Inox Granel'
+  | 'Caçamba Estanque Roll-on'
+  | 'IBC 1.000 Litros Homologado'
+  | 'Tambores 200 Litros Metálicos/Plásticos'
+  | 'Big Bag Homologado'
+  | 'Bombonas 50 Litros'
+  | 'Paletes Enlonados';
+
+export type TecnologiaDestinacaoFinal =
+  | 'Coprocessamento em Forno de Clínquer'
+  | 'Incineração Térmica de Resíduos Perigosos'
+  | 'Aterro Industrial Classe I (Perigoso)'
+  | 'Aterro Classe II-A (Não Inerte)'
+  | 'Tratamento Físico-Químico / ETE Industrial'
+  | 'Rerrefino de Óleo Lubrificante Usado (OLUC)'
+  | 'Descaracterização & Logística Reversa'
+  | 'Compostagem / Tratamento Biológico'
+  | 'Reciclagem & Beneficiamento de Materiais';
+
+export type TipoManifestoMtr =
+  | 'MTR Inicial (Padrão)'
+  | 'MTR Complementar'
+  | 'MTR Provisório'
+  | 'MTR de Armazenamento Temporário';
+
 export interface DocumentoAmbiental {
   id: string;
   numeroMTR: string;
-  sistemaEmissor: 'SINIR' | 'SIGOR SP' | 'FEPAM RS' | 'INEA RJ' | 'Outro';
+  chaveAcessoMtr?: string; // Código de 16 a 24 dígitos do SINIR/SIGOR
+  tipoManifesto?: TipoManifestoMtr;
+  sistemaEmissor: SistemaEmissorMtr | 'SINIR' | 'SIGOR SP' | 'FEPAM RS' | 'INEA RJ' | 'Outro';
+
+  // Gerador (Origem)
   gerador: string;
+  cnpjGerador?: string;
+  municipioUfGerador?: string;
+  licencaGerador?: string;
+  responsavelGeradorNome?: string;
+
+  // Destinador Final
   destinador: string;
+  cnpjDestinador?: string;
+  municipioUfDestinador?: string;
+  licencaDestinador?: string;
+  responsavelDestinadorNome?: string;
+
+  // Transportador (Ambipar Logistics)
+  transportadorNome?: string;
+  cnpjTransportador?: string;
+  rntrcTransportador?: string;
+  licencaOperacaoTransporte?: string;
+  placaCavalo?: string;
+  placaCarreta?: string;
+  motoristaNome?: string;
+  motoristaCpf?: string;
+  motoristaMopp?: string;
+
+  // Resíduo e Classificações Ambientais
   codigoIbama: string;
   descricaoResiduo: string;
+  classeResiduo?: ClasseResiduo;
+  estadoFisico?: EstadoFisicoResiduo;
+  tipoAcondicionamento?: TipoAcondicionamentoResiduo;
   quantidadeTon: number;
+  volumeM3?: number;
+  densidadeEstimada?: number;
+  ticketBalanca?: string;
+
+  // Regulamento ANTT (Produtos Perigosos)
+  numeroOnu?: string; // Ex: UN 3082 ou UN 1993
+  classeRiscoOnu?: string; // Ex: Classe 9 ou Classe 3
+  grupoEmbalagemOnu?: 'I' | 'II' | 'III';
+  nomeApropriadoEmbarque?: string;
+
+  // Destinação Final & CDF
+  tecnologiaDestinacao?: TecnologiaDestinacaoFinal;
   status: StatusMTR;
   dataEmissao: string;
   dataValidadeMTR: string;
+  dataRecebimento?: string;
   numeroCDF?: string;
+  dataEmissaoCDF?: string;
   viagemId?: string;
+  observacoes?: string;
+}
+
+export interface CertificadoDestinacaoFinalCDF {
+  id: string;
+  numeroCDF: string; // Ex: CDF-SINIR-2026-08192
+  sistemaEmissor: SistemaEmissorMtr | string;
+  destinadorRazaoSocial: string;
+  destinadorCnpj: string;
+  destinadorLicencaOperacao: string;
+  destinadorEndereco?: string;
+  geradorRazaoSocial: string;
+  geradorCnpj: string;
+  geradorEndereco?: string;
+  tecnologiaDestinacao: TecnologiaDestinacaoFinal | string;
+  dataEmissao: string;
+  dataRecebimentoInicial: string;
+  dataRecebimentoFinal: string;
+  pesoTotalHomologadoTon: number;
+  mtrsVinculados: string[]; // Números dos MTRs cobertos
+  descricaoResiduos: string;
+  responsavelTecnicoNome: string;
+  responsavelTecnicoConselho: string; // Ex: CRQ IV ou CREA-SP
+  responsavelTecnicoNumero: string; // Ex: 04291823
+  numeroArt: string; // Anotação de Responsabilidade Técnica
+  status: 'Homologado & Válido' | 'Pendente de Regularização' | 'Cancelado';
+  laudoAnaliticoNumero?: string;
+  observacoes?: string;
 }
 
 export interface LicencaVeiculo {
   id: string;
-  placa: string;
-  tipoDocumento: 'CIV (Certificado de Inspeção Veicular)' | 'CIPP (Produtos Perigosos)' | 'Licença IBAMA' | 'Licença CETESB / Estadual' | 'AET';
+  placa?: string;
+  entidade?: 'Veículo da Frota' | 'Empresa Ambipar' | 'Base Operacional';
+  tipoDocumento: 
+    | 'CIV (Certificado de Inspeção Veicular)' 
+    | 'CIPP (Produtos Perigosos)' 
+    | 'Licença IBAMA' 
+    | 'Licença CETESB / Estadual' 
+    | 'AET'
+    | 'CIV (Certificado de Inspeção Veicular - Inmetro)'
+    | 'CIPP (Produtos Perigosos Granel - Inmetro)'
+    | 'CIPP (Produtos Perigosos Fracionado)'
+    | 'Licença Operacional de Transporte (IBAMA)'
+    | 'Licença de Operação Estadual (CETESB SP)'
+    | 'Licença Ambiental Estadual (INEA RJ)'
+    | 'Licença Ambiental Estadual (FEPAM RS)'
+    | 'Licença Ambiental Estadual (FEAM MG)'
+    | 'CTF/APP IBAMA (Certificado de Regularidade)'
+    | 'Certificação SASSMAQ Rodoviário'
+    | 'Cronotacógrafo Inmetro'
+    | 'AET (Autorização Especial de Trânsito)';
   numeroCertificado: string;
+  orgaoEmissor?: string;
+  dataEmissao?: string;
   dataValidade: string;
   status: 'Válido' | 'Atenção (Expira em 30d)' | 'Vencido';
+  observacoes?: string;
 }
 
 export interface Ocorrencia {

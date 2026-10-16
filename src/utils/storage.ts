@@ -13,6 +13,7 @@ import {
   EmpresaFiscalConfig,
   MedicaoContrato,
   CotacaoManutencao,
+  CertificadoDestinacaoFinalCDF,
 } from '../types';
 import {
   INITIAL_VIAGENS,
@@ -24,6 +25,7 @@ import {
   INITIAL_MANUTENCOES,
   INITIAL_CHECKLISTS,
   INITIAL_ABASTECIMENTOS,
+  INITIAL_CDFS,
 } from '../data/mockData';
 import {
   INITIAL_CTES,
@@ -46,6 +48,7 @@ const KEYS = {
   EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v2',
   MEDICOES: 'ambipar_logistica_medicoes_v2',
   COTACOES: 'ambipar_logistica_cotacoes_v2',
+  CDFS: 'ambipar_logistica_cdfs_v2',
 };
 
 // Limpa automaticamente dados de versões anteriores com dados fictícios
@@ -221,3 +224,14 @@ export const getStoredCotacoes = (): CotacaoManutencao[] => {
   try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredCotacoes = (data: CotacaoManutencao[]) => localStorage.setItem(KEYS.COTACOES, JSON.stringify(data));
+
+// Certificados de Destinação Final (CDF)
+export const getStoredCdfs = (): CertificadoDestinacaoFinalCDF[] => {
+  const data = localStorage.getItem(KEYS.CDFS);
+  if (!data) {
+    localStorage.setItem(KEYS.CDFS, JSON.stringify(INITIAL_CDFS));
+    return INITIAL_CDFS;
+  }
+  try { return JSON.parse(data); } catch { return INITIAL_CDFS; }
+};
+export const saveStoredCdfs = (data: CertificadoDestinacaoFinalCDF[]) => localStorage.setItem(KEYS.CDFS, JSON.stringify(data));

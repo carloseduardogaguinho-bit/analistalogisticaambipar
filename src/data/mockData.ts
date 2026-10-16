@@ -8,6 +8,7 @@ import {
   Manutencao,
   ChecklistDiario,
   Abastecimento,
+  CertificadoDestinacaoFinalCDF,
 } from '../types';
 
 // Banco de dados inicial limpo - pronto para inserção de dados reais da Ambipar
@@ -28,3 +29,5 @@ export const INITIAL_MTRS: DocumentoAmbiental[] = [];
 export const INITIAL_LICENCAS: LicencaVeiculo[] = [];
 
 export const INITIAL_OCORRENCIAS: Ocorrencia[] = [];
+
+export const INITIAL_CDFS: CertificadoDestinacaoFinalCDF[] = [];
