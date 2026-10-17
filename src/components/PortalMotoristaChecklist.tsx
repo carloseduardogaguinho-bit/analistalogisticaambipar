@@ -181,11 +181,13 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     if ((motoristaLogado?.nome || nomeMotoristaManual) && placaCavalo) {
       const hoje = new Date().toISOString().slice(0, 10);
       const cleanCpf = cpfInput.replace(/\D/g, '');
+      const normPlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const placaCavaloNorm = normPlaca(placaCavalo);
 
       const abertoHoje = checklists.find(
         (c) =>
           c.tipoInspecao === 'Saída para Viagem' &&
-          c.veiculoPlaca.toUpperCase() === placaCavalo.toUpperCase() &&
+          normPlaca(c.veiculoPlaca) === placaCavaloNorm &&
           c.dataHora.startsWith(hoje) &&
           c.statusJornada !== 'Jornada Concluída' &&
           (cleanCpf === '' || !c.motoristaCpf || c.motoristaCpf.replace(/\D/g, '') === cleanCpf)
@@ -217,7 +219,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       }
 
       // Atualiza km inicial sugerido a partir do odômetro do veículo caso exista
-      const v = veiculos.find((veic) => veic.placa.toUpperCase() === placaCavalo.toUpperCase());
+      const v = veiculos.find((veic) => normPlaca(veic.placa) === placaCavaloNorm);
       if (v && v.odometroAtualKm) {
         setInicialData((prev) => ({ ...prev, kmInicial: v.odometroAtualKm }));
       }
@@ -435,7 +437,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans selection:bg-ambipar-500 selection:text-slate-950">
+    <div className="h-full bg-slate-950 text-white flex flex-col justify-between font-sans selection:bg-ambipar-500 selection:text-slate-950 overflow-y-auto">
       {/* Top Header Mobile-First - 100% Autônomo e Seguro */}
       <header className="bg-slate-900 border-b border-slate-800 px-4 py-3.5 sticky top-0 z-30 shadow-md">
         <div className="max-w-xl mx-auto flex items-center justify-between">

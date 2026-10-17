@@ -6,6 +6,8 @@ import {
   StatusVeiculo,
   TipoPropriedadeVeiculo,
   TipoTracaoVeiculo,
+  ChecklistDiario,
+  Abastecimento,
 } from '../types';
 import {
   Truck,
@@ -38,16 +40,24 @@ import {
   Sparkles,
   Building,
   UserCheck,
-  Scale
+  Scale,
+  RefreshCw,
+  Radio,
+  Zap
 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 
 interface FrotaViewProps {
   veiculos: Veiculo[];
+  checklists?: ChecklistDiario[];
+  abastecimentos?: Abastecimento[];
   onAddVeiculo: (veiculo: Veiculo) => void;
   onUpdateVeiculo?: (veiculo: Veiculo) => void;
   onDeleteVeiculo?: (id: string) => void;
   onUpdateVeiculoStatus: (id: string, status: StatusVeiculo) => void;
+  onSincronizarOdometros?: () => number;
+  onAtualizarKmManual?: (veiculoId: string, novoKm: number, observacao?: string) => void;
+  onNavigateToTab?: (tab: any) => void;
 }
 
 const EQUIPAMENTOS: TipoEquipamento[] = [
@@ -86,10 +96,15 @@ const PROPRIEDADES: TipoPropriedadeVeiculo[] = [
 
 export const FrotaView: React.FC<FrotaViewProps> = ({
   veiculos,
+  checklists = [],
+  abastecimentos = [],
   onAddVeiculo,
   onUpdateVeiculo,
   onDeleteVeiculo,
   onUpdateVeiculoStatus,
+  onSincronizarOdometros,
+  onAtualizarKmManual,
+  onNavigateToTab,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('TODOS');
@@ -97,11 +112,21 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
   const [filterPropriedade, setFilterPropriedade] = useState<string>('TODOS');
   const [viewMode, setViewMode] = useState<'cards' | 'tabela'>('cards');
 
+  // Feedback Toast de Sincronização
+  const [syncToast, setSyncToast] = useState<{ show: boolean; count: number; message: string } | null>(null);
+
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dossieVeiculo, setDossieVeiculo] = useState<Veiculo | null>(null);
   const [activeFormTab, setActiveFormTab] = useState<'veiculo' | 'implemento' | 'manutencao' | 'laudos'>('veiculo');
+
+  // Modal: Ajuste Rápido de Odômetro (KM)
+  const [isKmModalOpen, setIsKmModalOpen] = useState(false);
+  const [kmModalVeiculo, setKmModalVeiculo] = useState<Veiculo | null>(null);
+  const [kmModalNovoKm, setKmModalNovoKm] = useState<number>(50000);
+  const [kmModalOrigem, setKmModalOrigem] = useState<string>('Checklist Fim de Rota / Retorno XD');
+  const [kmModalObs, setKmModalObs] = useState<string>('');
 
   // Form State
   const initialFormState: Partial<Veiculo> = {
@@ -219,16 +244,64 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
     return matchesSearch && matchesStatus && matchesEquipamento && matchesPropriedade;
   });
 
+  // Helper para normalização de placas
+  const normalizePlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
   // KPIs
   const totalVeiculos = veiculos.length;
   const disponiveisCount = veiculos.filter((v) => v.status === 'Disponível').length;
   const emViagemCount = veiculos.filter((v) => v.status === 'Em Viagem').length;
   const emManutencaoCount = veiculos.filter((v) => v.status === 'Em Manutenção').length;
   const revisaoUrgenteCount = veiculos.filter((v) => isRevisaoProxima(v)).length;
+  const veiculosRevisaoVencida = veiculos.filter((v) => (v.proximaRevisaoKm - v.odometroAtualKm) <= 0);
   const laudosVencidosCount = veiculos.filter((v) => hasCriticalExpiredLaudo(v)).length;
   const frotaPropriaCount = veiculos.filter((v) => (v.tipoPropriedade || 'Frota Própria Ambipar') === 'Frota Própria Ambipar').length;
+  const totalKmFrota = veiculos.reduce((acc, v) => acc + (v.odometroAtualKm || 0), 0);
 
   const taxaDisponibilidade = totalVeiculos > 0 ? Math.round((disponiveisCount / totalVeiculos) * 100) : 100;
+
+  // Handlers para Sincronização e Ajuste Rápido de Odômetro
+  const handleSyncOdometros = () => {
+    if (onSincronizarOdometros) {
+      const updatedCount = onSincronizarOdometros();
+      setSyncToast({
+        show: true,
+        count: updatedCount,
+        message: updatedCount > 0
+          ? `${updatedCount} veículo(s) tiveram seus odômetros atualizados em tempo real com base nos checklists e rotas XD!`
+          : 'Todos os odômetros da frota já estão 100% atualizados e sincronizados com os checklists e rotas XD.',
+      });
+      setTimeout(() => setSyncToast(null), 5000);
+    }
+  };
+
+  const handleOpenKmModal = (v: Veiculo) => {
+    setKmModalVeiculo(v);
+    setKmModalNovoKm(v.odometroAtualKm);
+    setKmModalOrigem('Checklist Fim de Rota / Retorno XD');
+    setKmModalObs('');
+    setIsKmModalOpen(true);
+  };
+
+  const handleSaveKmModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!kmModalVeiculo) return;
+    if (kmModalNovoKm < kmModalVeiculo.odometroAtualKm) {
+      if (!confirm(`O novo odômetro (${formatNumber(kmModalNovoKm, 0)} km) é menor que o odômetro atual (${formatNumber(kmModalVeiculo.odometroAtualKm, 0)} km). Deseja confirmar mesmo assim?`)) {
+        return;
+      }
+    }
+    if (onAtualizarKmManual) {
+      onAtualizarKmManual(kmModalVeiculo.id, kmModalNovoKm, `[${kmModalOrigem}] ${kmModalObs}`);
+    }
+    setIsKmModalOpen(false);
+    setSyncToast({
+      show: true,
+      count: 1,
+      message: `Odômetro do veículo ${kmModalVeiculo.placa} atualizado para ${formatNumber(kmModalNovoKm, 0)} km com sucesso!`,
+    });
+    setTimeout(() => setSyncToast(null), 5000);
+  };
 
   // Handlers
   const handleOpenCreateModal = () => {
@@ -383,7 +456,16 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleSyncOdometros}
+            className="px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+            title="Sincronizar Odômetros com Checklists Diários (Saída/Retorno) e Rotas XD"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Sincronizar KM (Checklists & XD)</span>
+          </button>
+
           <button
             onClick={handleExportCsv}
             className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
@@ -399,6 +481,84 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
           >
             <Plus className="w-4 h-4" />
             <span>Cadastrar Novo Veículo</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Toast Feedback de Sincronização */}
+      {syncToast && (
+        <div className="p-3.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-between text-xs text-cyan-200 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="font-semibold">{syncToast.message}</span>
+          </div>
+          <button onClick={() => setSyncToast(null)} className="text-slate-400 hover:text-white p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Alerta Crítico de Segurança Mecânica: Revisão Vencida */}
+      {veiculosRevisaoVencida.length > 0 && (
+        <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-200 shadow-lg animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/25 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40 font-bold">
+              <AlertOctagon className="w-6 h-6 text-rose-400" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white text-sm">
+                ALERTA DE SEGURANÇA MECÂNICA: {veiculosRevisaoVencida.length} veículo(s) com revisão preventiva vencida por KM!
+              </h4>
+              <p className="text-[11px] text-rose-300 mt-0.5">
+                Placas com revisão vencida: <strong>{veiculosRevisaoVencida.map((v) => `${v.placa} (${formatNumber(v.odometroAtualKm, 0)} km)`).join(' • ')}</strong>.
+                Ordens de manutenção preventiva foram agendadas para garantir a integridade dos motoristas e a conformidade SASSMAQ Ambipar.
+              </p>
+            </div>
+          </div>
+          {onNavigateToTab && (
+            <button
+              onClick={() => onNavigateToTab('manutencao')}
+              className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shrink-0 transition shadow-md shadow-rose-500/20"
+            >
+              Ver Manutenções
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Painel de Telemetria e Monitoramento de Odômetros XD */}
+      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20 shrink-0">
+            <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-white text-xs sm:text-sm">Central de Telemetria & Odômetros de Fim de Rota (XD)</h4>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>Sincronização Ativa</span>
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Todos os KMs preenchidos no encerramento de turno pelo motorista ou retorno de viagem atualizam a frota instantaneamente e recalculam as revisões preventivas.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
+          <div className="text-right">
+            <span className="text-[10px] uppercase font-semibold text-slate-500 block">KM Total Rodado Frota</span>
+            <strong className="font-mono text-sm font-bold text-white">{formatNumber(totalKmFrota, 0)} km</strong>
+          </div>
+
+          <button
+            onClick={handleSyncOdometros}
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
+            title="Recalcular e sincronizar odômetros dos veículos com base nos checklists"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Sincronizar Agora</span>
           </button>
         </div>
       </div>
@@ -679,7 +839,18 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                         <Gauge className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Odômetro Atual:</span>
                       </span>
-                      <strong className="font-mono text-white text-xs">{formatNumber(v.odometroAtualKm, 0)} km</strong>
+                      <div className="flex items-center gap-2">
+                        <strong className="font-mono text-white text-sm font-black">{formatNumber(v.odometroAtualKm, 0)} km</strong>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenKmModal(v)}
+                          className="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold flex items-center gap-1 transition shadow-sm active:scale-95"
+                          title="Ajustar / Atualizar KM deste veículo"
+                        >
+                          <Zap className="w-3 h-3 text-cyan-400" />
+                          <span>Ajustar KM</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
@@ -693,7 +864,7 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                     {/* Progress Bar towards revision */}
                     <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-800">
                       <div
-                        className={`h-full rounded-full ${
+                        className={`h-full rounded-full transition-all duration-500 ${
                           revisaoVencida ? 'bg-rose-500' : alertaRevisao ? 'bg-amber-500' : 'bg-emerald-500'
                         }`}
                         style={{ width: `${Math.min(100, progressoRevisao)}%` }}
@@ -708,6 +879,29 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                           : `Faltam ${formatNumber(kmParaRevisao, 0)} km`}
                       </span>
                     </div>
+
+                    {/* Informação do Último Checklist do Veículo */}
+                    {(() => {
+                      const vPlacaNorm = normalizePlaca(v.placa);
+                      const ultimoChk = checklists.find((c) => normalizePlaca(c.veiculoPlaca) === vPlacaNorm);
+                      if (!ultimoChk) return null;
+                      return (
+                        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                          <span className="truncate">
+                            Checklist: <strong className="text-slate-300">{ultimoChk.tipoInspecao}</strong> ({ultimoChk.dataHora.slice(0, 10)})
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded font-semibold ${
+                            ultimoChk.resultado.includes('Reprovado')
+                              ? 'bg-rose-500/20 text-rose-300'
+                              : ultimoChk.resultado.includes('Restrição')
+                              ? 'bg-amber-500/20 text-amber-300'
+                              : 'bg-emerald-500/20 text-emerald-300'
+                          }`}>
+                            {ultimoChk.resultado.includes('Reprovado') ? 'Bloqueado' : ultimoChk.resultado.includes('Restrição') ? 'Restrição' : 'Liberado'}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Laudos Regulamentares (CIV / CIPP) */}
@@ -736,14 +930,25 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
 
                 {/* Bottom Actions */}
                 <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <button
-                    onClick={() => setDossieVeiculo(v)}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition"
-                    title="Visualizar e Imprimir Dossiê Técnico A4"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Dossiê A4</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setDossieVeiculo(v)}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition"
+                      title="Visualizar e Imprimir Dossiê Técnico A4"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Dossiê A4</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenKmModal(v)}
+                      className="p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[11px] font-semibold flex items-center gap-1 transition"
+                      title="Atualizar odômetro do veículo"
+                    >
+                      <Gauge className="w-3.5 h-3.5" />
+                      <span>Atualizar KM</span>
+                    </button>
+                  </div>
 
                   <div className="flex items-center gap-1">
                     <button
@@ -863,6 +1068,13 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => handleOpenKmModal(v)}
+                          className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300"
+                          title="Ajustar / Atualizar KM deste veículo"
+                        >
+                          <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+                        </button>
+                        <button
                           onClick={() => setDossieVeiculo(v)}
                           className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
                           title="Ver Dossiê A4"
@@ -890,6 +1102,161 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL: AJUSTE / ATUALIZAÇÃO RÁPIDA DE ODÔMETRO (KM)
+          ========================================================= */}
+      {isKmModalOpen && kmModalVeiculo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                  <Gauge className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>Atualizar Odômetro</span>
+                    <span className="font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 text-xs">
+                      {kmModalVeiculo.placa}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {kmModalVeiculo.marca} {kmModalVeiculo.modelo} &bull; {kmModalVeiculo.tipoEquipamento}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsKmModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveKmModal} className="space-y-4">
+              {/* Odômetro atual vs Próxima Revisão */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                <div>
+                  <span className="text-[10px] uppercase font-semibold text-slate-500 block">Odômetro Registrado</span>
+                  <div className="font-mono text-base font-bold text-slate-300">
+                    {formatNumber(kmModalVeiculo.odometroAtualKm, 0)} km
+                  </div>
+                  <span className="text-[10px] text-slate-500">Última leitura</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] uppercase font-semibold text-slate-500 block">Próxima Revisão</span>
+                  <div className="font-mono text-base font-bold text-amber-400">
+                    {formatNumber(kmModalVeiculo.proximaRevisaoKm, 0)} km
+                  </div>
+                  <span className="text-[10px] text-slate-500">Meta preventiva</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                  <span>Novo Odômetro (KM Atual) *</span>
+                  <span className="text-[10px] text-cyan-400 font-mono">
+                    {kmModalNovoKm > kmModalVeiculo.odometroAtualKm
+                      ? `+${formatNumber(kmModalNovoKm - kmModalVeiculo.odometroAtualKm, 0)} km rodados`
+                      : 'Hodômetro'}
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  value={kmModalNovoKm || ''}
+                  onChange={(e) => setKmModalNovoKm(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-lg font-mono font-bold text-white focus:outline-none focus:border-cyan-500 transition"
+                  placeholder="Ex: 52350"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-200">
+                  Origem da Leitura / Integração *
+                </label>
+                <select
+                  value={kmModalOrigem}
+                  onChange={(e) => setKmModalOrigem(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                >
+                  <option value="Checklist Fim de Rota / Retorno XD">Checklist Fim de Rota / Retorno XD</option>
+                  <option value="Integração Telemetria / Rastreador XD">Integração Telemetria / Rastreador XD</option>
+                  <option value="Retorno de Viagem Operacional">Retorno de Viagem Operacional</option>
+                  <option value="Abastecimento em Posto Credenciado">Abastecimento em Posto Credenciado</option>
+                  <option value="Leitura Física de Painel / Manutenção">Leitura Física de Painel / Manutenção</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-200">
+                  Observações / Rota Operacional
+                </label>
+                <input
+                  type="text"
+                  value={kmModalObs}
+                  onChange={(e) => setKmModalObs(e.target.value)}
+                  placeholder="Ex: Rota finalizada e validada no fim do dia"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              {/* Alerta de Segurança e Revisão em tempo real no modal */}
+              {kmModalNovoKm >= kmModalVeiculo.proximaRevisaoKm ? (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-[11px] text-rose-300 flex items-start gap-2 animate-pulse">
+                  <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">ALERTA CRÍTICO: REVISÃO PREVENTIVA VENCIDA!</strong>
+                    <span>
+                      O novo KM ({formatNumber(kmModalNovoKm, 0)} km) superou a meta de revisão ({formatNumber(kmModalVeiculo.proximaRevisaoKm, 0)} km).
+                      Uma ordem de manutenção preventiva será agendada automaticamente para a segurança da frota e conformidade SASSMAQ.
+                    </span>
+                  </div>
+                </div>
+              ) : kmModalVeiculo.proximaRevisaoKm - kmModalNovoKm <= 3000 ? (
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-[11px] text-amber-300 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">Atenção: Revisão Preventiva Próxima</strong>
+                    <span>
+                      Restam apenas {formatNumber(kmModalVeiculo.proximaRevisaoKm - kmModalNovoKm, 0)} km para a próxima revisão obrigatória.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    Veículo em conformidade mecânica. Faltam {formatNumber(kmModalVeiculo.proximaRevisaoKm - kmModalNovoKm, 0)} km para a próxima revisão.
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsKmModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition active:scale-95"
+                >
+                  <Gauge className="w-4 h-4" />
+                  <span>Salvar Odômetro</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

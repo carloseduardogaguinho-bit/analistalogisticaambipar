@@ -347,34 +347,87 @@ export const App: React.FC = () => {
     );
   };
 
-  // Handlers: Checklists
+  // Helper para normalização e comparação segura de placas automotivas
+  const normalizePlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+  // Handlers: Checklists com Sincronização Automática de Odômetro & Segurança de Revisão
   const handleAddChecklist = (chk: ChecklistDiario) => {
-    setChecklists((prev) => [chk, ...prev]);
+    setChecklists((prev) => {
+      const updated = [chk, ...prev];
+      saveStoredChecklists(updated);
+      return updated;
+    });
+
+    const chkPlacaNorm = normalizePlaca(chk.veiculoPlaca);
+    const novoKm = chk.kmFinal && chk.kmFinal > 0 ? chk.kmFinal : chk.kmInicial;
+    let revisaoVencidaDetectada = false;
+    let proximaRevMeta = 0;
+    let veiculoAfetado: Veiculo | undefined;
 
     // Atualiza odômetro do veículo conforme o momento da inspeção
-    if (chk.kmFinal) {
-      setVeiculos((prev) =>
-        prev.map((v) =>
-          v.placa === chk.veiculoPlaca && chk.kmFinal! > v.odometroAtualKm
-            ? { ...v, odometroAtualKm: chk.kmFinal! }
-            : v
-        )
-      );
-    } else if (chk.kmInicial) {
-      setVeiculos((prev) =>
-        prev.map((v) =>
-          v.placa === chk.veiculoPlaca && chk.kmInicial > v.odometroAtualKm
-            ? { ...v, odometroAtualKm: chk.kmInicial }
-            : v
-        )
-      );
-    }
+    setVeiculos((prev) => {
+      const updated = prev.map((v) => {
+        if (normalizePlaca(v.placa) === chkPlacaNorm) {
+          veiculoAfetado = v;
+          proximaRevMeta = v.proximaRevisaoKm;
 
-    // Se reprovado, bloqueia o veículo
-    if (chk.resultado === 'Reprovado - Bloqueado') {
-      setVeiculos((prev) =>
-        prev.map((v) => (v.placa === chk.veiculoPlaca ? { ...v, status: 'Em Manutenção' } : v))
-      );
+          let newStatus = v.status;
+          if (chk.resultado === 'Reprovado - Bloqueado') {
+            newStatus = 'Em Manutenção';
+          } else if (v.status === 'Em Viagem' && (chk.tipoInspecao === 'Retorno à Base' || chk.kmFinal)) {
+            newStatus = 'Disponível';
+          }
+
+          const kmAtualizado = novoKm && novoKm > v.odometroAtualKm ? novoKm : v.odometroAtualKm;
+          if (kmAtualizado >= v.proximaRevisaoKm) {
+            revisaoVencidaDetectada = true;
+          }
+
+          const scoreSaude = kmAtualizado >= v.proximaRevisaoKm
+            ? Math.min(v.scoreSaudeMecanica || 90, 55)
+            : (v.scoreSaudeMecanica || 95);
+
+          return {
+            ...v,
+            odometroAtualKm: kmAtualizado,
+            status: newStatus,
+            scoreSaudeMecanica: scoreSaude,
+          };
+        }
+        return v;
+      });
+
+      saveStoredVeiculos(updated);
+      return updated;
+    });
+
+    // Se a revisão preventiva venceu pelo KM percorrido na rota/checklist, gera ordem de manutenção preventiva automática
+    if (revisaoVencidaDetectada && novoKm) {
+      setManutencoes((prev) => {
+        const jaExisteAberta = prev.some(
+          (m) => normalizePlaca(m.veiculoPlaca) === chkPlacaNorm && m.status !== 'Concluída'
+        );
+        if (!jaExisteAberta) {
+          const autoManut: Manutencao = {
+            id: `man-auto-rev-${Date.now()}`,
+            veiculoPlaca: chk.veiculoPlaca,
+            tipo: 'Preventiva',
+            descricao: `[REVISÃO PREVENTIVA OBRIGATÓRIA AUTOMÁTICA] Odômetro atingiu ${novoKm.toLocaleString('pt-BR')} km e superou a meta de revisão (${proximaRevMeta.toLocaleString('pt-BR')} km). Acionado no encerramento de rota/checklist para segurança mecânica da frota.`,
+            kmNoMomento: novoKm,
+            kmProximaRevisao: novoKm + 15000,
+            dataEntrada: new Date().toISOString().slice(0, 10),
+            dataPrevisaoSaida: new Date(Date.now() + 2 * 86400 * 1000).toISOString().slice(0, 10),
+            oficina: 'Oficina Central Ambipar Paulínia',
+            custoTotal: 2500,
+            status: 'Agendada',
+            responsavelAprovacao: 'Sistema Autônomo de Gestão de Frota & Segurança',
+          };
+          const updatedMan = [autoManut, ...prev];
+          saveStoredManutencoes(updatedMan);
+          return updatedMan;
+        }
+        return prev;
+      });
     }
 
     // Se houver avarias críticas registradas, gera ocorrência operacional automática
@@ -393,7 +446,11 @@ export const App: React.FC = () => {
         status: 'Aberta',
         responsavelTratativa: 'Oficina / Gestão de Frotas Ambipar',
       };
-      setOcorrencias((prev) => [novaOcorrencia, ...prev]);
+      setOcorrencias((prev) => {
+        const updated = [novaOcorrencia, ...prev];
+        saveStoredOcorrencias(updated);
+        return updated;
+      });
     }
 
     const client = getSupabaseClient();
@@ -416,21 +473,75 @@ export const App: React.FC = () => {
         resultado: chk.resultado,
         observacoes: chk.observacoes,
       }]).then(() => {});
+
+      if (novoKm) {
+        client.from('veiculos')
+          .update({ odometro_atual_km: novoKm })
+          .ilike('placa', `%${chkPlacaNorm}%`)
+          .then(() => {});
+      }
     }
   };
 
-  // Handlers: Abastecimentos
+  // Handlers: Abastecimentos com Atualização Automática de Odômetro
   const handleAddAbastecimento = (aba: Abastecimento) => {
-    setAbastecimentos((prev) => [aba, ...prev]);
+    setAbastecimentos((prev) => {
+      const updated = [aba, ...prev];
+      saveStoredAbastecimentos(updated);
+      return updated;
+    });
+
+    const abaPlacaNorm = normalizePlaca(aba.veiculoPlaca);
+    let revisaoVencida = false;
+    let proximaRevMeta = 0;
 
     // Atualiza odômetro do veículo
-    setVeiculos((prev) =>
-      prev.map((v) =>
-        v.placa === aba.veiculoPlaca && aba.odometroKm > v.odometroAtualKm
-          ? { ...v, odometroAtualKm: aba.odometroKm }
-          : v
-      )
-    );
+    setVeiculos((prev) => {
+      const updated = prev.map((v) => {
+        if (normalizePlaca(v.placa) === abaPlacaNorm && aba.odometroKm > v.odometroAtualKm) {
+          proximaRevMeta = v.proximaRevisaoKm;
+          if (aba.odometroKm >= v.proximaRevisaoKm) {
+            revisaoVencida = true;
+          }
+          const scoreSaude = aba.odometroKm >= v.proximaRevisaoKm
+            ? Math.min(v.scoreSaudeMecanica || 90, 55)
+            : (v.scoreSaudeMecanica || 95);
+
+          return { ...v, odometroAtualKm: aba.odometroKm, scoreSaudeMecanica: scoreSaude };
+        }
+        return v;
+      });
+      saveStoredVeiculos(updated);
+      return updated;
+    });
+
+    if (revisaoVencida && aba.odometroKm) {
+      setManutencoes((prev) => {
+        const jaAberta = prev.some(
+          (m) => normalizePlaca(m.veiculoPlaca) === abaPlacaNorm && m.status !== 'Concluída'
+        );
+        if (!jaAberta) {
+          const autoManut: Manutencao = {
+            id: `man-auto-aba-${Date.now()}`,
+            veiculoPlaca: aba.veiculoPlaca,
+            tipo: 'Preventiva',
+            descricao: `[REVISÃO PREVENTIVA OBRIGATÓRIA] Odômetro atingiu ${aba.odometroKm.toLocaleString('pt-BR')} km no abastecimento (Meta: ${proximaRevMeta.toLocaleString('pt-BR')} km). Revisão preventiva gerada automaticamente.`,
+            kmNoMomento: aba.odometroKm,
+            kmProximaRevisao: aba.odometroKm + 15000,
+            dataEntrada: new Date().toISOString().slice(0, 10),
+            dataPrevisaoSaida: new Date(Date.now() + 2 * 86400 * 1000).toISOString().slice(0, 10),
+            oficina: 'Oficina Central Ambipar',
+            custoTotal: 2500,
+            status: 'Agendada',
+            responsavelAprovacao: 'Gestão de Frotas & Abastecimento',
+          };
+          const updatedMan = [autoManut, ...prev];
+          saveStoredManutencoes(updatedMan);
+          return updatedMan;
+        }
+        return prev;
+      });
+    }
 
     const client = getSupabaseClient();
     if (client) {
@@ -447,6 +558,151 @@ export const App: React.FC = () => {
         km_rodados_desde_ultimo: aba.kmRodadosDesdeUltimo,
         media_km_l: aba.mediaKmL,
       }]).then(() => {});
+
+      client.from('veiculos')
+        .update({ odometro_atual_km: aba.odometroKm })
+        .ilike('placa', `%${abaPlacaNorm}%`)
+        .then(() => {});
+    }
+  };
+
+  // Sincronização em massa de odômetros a partir de todos os checklists e abastecimentos
+  const handleSincronizarOdometros = (): number => {
+    let veiculosAtualizados = 0;
+    const novosAgendamentos: Manutencao[] = [];
+
+    setVeiculos((prev) => {
+      const updated = prev.map((v) => {
+        const vPlacaNorm = normalizePlaca(v.placa);
+        let maiorKm = v.odometroAtualKm;
+
+        // Checklists
+        checklists.forEach((c) => {
+          if (normalizePlaca(c.veiculoPlaca) === vPlacaNorm) {
+            if (c.kmFinal && c.kmFinal > maiorKm) maiorKm = c.kmFinal;
+            if (c.kmInicial && c.kmInicial > maiorKm) maiorKm = c.kmInicial;
+          }
+        });
+
+        // Abastecimentos
+        abastecimentos.forEach((a) => {
+          if (normalizePlaca(a.veiculoPlaca) === vPlacaNorm) {
+            if (a.odometroKm && a.odometroKm > maiorKm) maiorKm = a.odometroKm;
+          }
+        });
+
+        if (maiorKm > v.odometroAtualKm) {
+          veiculosAtualizados++;
+          const scoreSaude = maiorKm >= v.proximaRevisaoKm
+            ? Math.min(v.scoreSaudeMecanica || 90, 55)
+            : (v.scoreSaudeMecanica || 95);
+
+          if (maiorKm >= v.proximaRevisaoKm) {
+            const jaAberta = manutencoes.some(
+              (m) => normalizePlaca(m.veiculoPlaca) === vPlacaNorm && m.status !== 'Concluída'
+            );
+            if (!jaAberta) {
+              novosAgendamentos.push({
+                id: `man-auto-sync-${Date.now()}-${v.id}`,
+                veiculoPlaca: v.placa,
+                tipo: 'Preventiva',
+                descricao: `[REVISÃO AUTOMÁTICA VIA SINCRONIZAÇÃO XD] Odômetro atualizado para ${maiorKm.toLocaleString('pt-BR')} km (Meta: ${v.proximaRevisaoKm.toLocaleString('pt-BR')} km). Revisão preventiva gerada por segurança operacional.`,
+                kmNoMomento: maiorKm,
+                kmProximaRevisao: maiorKm + 15000,
+                dataEntrada: new Date().toISOString().slice(0, 10),
+                dataPrevisaoSaida: new Date(Date.now() + 2 * 86400 * 1000).toISOString().slice(0, 10),
+                oficina: 'Oficina Central Ambipar',
+                custoTotal: 2500,
+                status: 'Agendada',
+                responsavelAprovacao: 'Sincronizador Automático de Rotas XD',
+              });
+            }
+          }
+
+          return {
+            ...v,
+            odometroAtualKm: maiorKm,
+            scoreSaudeMecanica: scoreSaude,
+          };
+        }
+        return v;
+      });
+
+      saveStoredVeiculos(updated);
+      return updated;
+    });
+
+    if (novosAgendamentos.length > 0) {
+      setManutencoes((prev) => {
+        const updated = [...novosAgendamentos, ...prev];
+        saveStoredManutencoes(updated);
+        return updated;
+      });
+    }
+
+    return veiculosAtualizados;
+  };
+
+  // Ajuste rápido e individual de odômetro pelo analista
+  const handleAtualizarKmManual = (veiculoId: string, novoKm: number, observacao?: string) => {
+    let revisaoVencida = false;
+    let veicRef: Veiculo | undefined;
+
+    setVeiculos((prev) => {
+      const updated = prev.map((v) => {
+        if (v.id === veiculoId) {
+          veicRef = v;
+          if (novoKm >= v.proximaRevisaoKm) {
+            revisaoVencida = true;
+          }
+          const scoreSaude = novoKm >= v.proximaRevisaoKm
+            ? Math.min(v.scoreSaudeMecanica || 90, 55)
+            : (v.scoreSaudeMecanica || 95);
+
+          return {
+            ...v,
+            odometroAtualKm: novoKm,
+            scoreSaudeMecanica: scoreSaude,
+          };
+        }
+        return v;
+      });
+      saveStoredVeiculos(updated);
+      return updated;
+    });
+
+    if (revisaoVencida && veicRef) {
+      const vPlacaNorm = normalizePlaca(veicRef.placa);
+      setManutencoes((prev) => {
+        const jaAberta = prev.some(
+          (m) => normalizePlaca(m.veiculoPlaca) === vPlacaNorm && m.status !== 'Concluída'
+        );
+        if (!jaAberta) {
+          const autoManut: Manutencao = {
+            id: `man-auto-manual-${Date.now()}`,
+            veiculoPlaca: veicRef!.placa,
+            tipo: 'Preventiva',
+            descricao: `[REVISÃO PREVENTIVA OBRIGATÓRIA] Odômetro atualizado manualmente para ${novoKm.toLocaleString('pt-BR')} km (Meta: ${veicRef!.proximaRevisaoKm.toLocaleString('pt-BR')} km). Obs: ${observacao || 'Ajuste operacional de odômetro'}`,
+            kmNoMomento: novoKm,
+            kmProximaRevisao: novoKm + 15000,
+            dataEntrada: new Date().toISOString().slice(0, 10),
+            dataPrevisaoSaida: new Date(Date.now() + 2 * 86400 * 1000).toISOString().slice(0, 10),
+            oficina: 'Oficina Central Ambipar',
+            custoTotal: 2500,
+            status: 'Agendada',
+            responsavelAprovacao: 'Gestão de Frotas Ambipar',
+          };
+          const updated = [autoManut, ...prev];
+          saveStoredManutencoes(updated);
+          return updated;
+        }
+        return prev;
+      });
+    }
+
+    const client = getSupabaseClient();
+    if (client && veicRef) {
+      client.from('veiculos').update({ odometro_atual_km: novoKm }).eq('id', veiculoId).then(() => {});
     }
   };
 
@@ -648,7 +904,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+    <div className="h-screen bg-slate-950 flex flex-col font-sans overflow-hidden">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -668,7 +924,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         {/* Sidebar */}
         <Sidebar
           activeTab={activeTab}
@@ -683,7 +939,7 @@ export const App: React.FC = () => {
         />
 
         {/* Content Area */}
-        <main className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+        <main className="flex-1 h-full overflow-y-auto p-4 lg:p-8 max-w-7xl mx-auto w-full">
           {activeTab === 'dashboard' && (
             <DashboardView
               viagens={viagens}
@@ -705,10 +961,15 @@ export const App: React.FC = () => {
           {activeTab === 'frota' && (
             <FrotaView
               veiculos={veiculos}
+              checklists={checklists}
+              abastecimentos={abastecimentos}
               onAddVeiculo={handleAddVeiculo}
               onUpdateVeiculo={handleUpdateVeiculo}
               onDeleteVeiculo={handleDeleteVeiculo}
               onUpdateVeiculoStatus={handleUpdateVeiculoStatus}
+              onSincronizarOdometros={handleSincronizarOdometros}
+              onAtualizarKmManual={handleAtualizarKmManual}
+              onNavigateToTab={setActiveTab}
             />
           )}
 

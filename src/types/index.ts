@@ -345,6 +345,7 @@ export interface Motorista {
 
 export type TipoManutencao =
   | 'Preventiva Programada'
+  | 'Preventiva'
   | 'Corretiva Emergencial'
   | 'Revisão de Pneus'
   | 'Inspeção Tanque / CIV'

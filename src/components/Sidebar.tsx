@@ -81,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full lg:w-72 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
-      <div className="p-4 space-y-4 overflow-y-auto">
+    <aside className="w-full lg:w-72 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 h-full overflow-hidden">
+      <div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
         {/* Section 1: Operação de Frota */}
         <div className="space-y-1">
           <div className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -167,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Supabase External DB & Footer */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2">
+      <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2 shrink-0">
         <button
           onClick={onOpenSupabaseModal}
           className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-xs font-semibold transition ${
