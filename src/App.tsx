@@ -997,7 +997,12 @@ export const App: React.FC = () => {
               checklists={checklists}
               veiculos={veiculos}
               motoristas={motoristas}
+              viagens={viagens}
+              manutencoes={manutencoes}
               onAddChecklist={handleAddChecklist}
+              onNavigateToTab={setActiveTab}
+              onSincronizarOdometros={handleSincronizarOdometros}
+              onAtualizarKmManual={handleAtualizarKmManual}
               onOpenPortalMotorista={() => {
                 if (typeof window !== 'undefined') {
                   const url = new URL(window.location.origin + window.location.pathname);

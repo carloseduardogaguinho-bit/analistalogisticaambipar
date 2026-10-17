@@ -27,7 +27,7 @@ import {
   Check,
   Fuel
 } from 'lucide-react';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, getNowLocalBR, getTodayLocalBR } from '../utils/formatters';
 
 interface PortalMotoristaChecklistProps {
   veiculos: Veiculo[];
@@ -179,7 +179,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   // Verificar se há jornada inicial aberta hoje para este veículo/motorista
   useEffect(() => {
     if ((motoristaLogado?.nome || nomeMotoristaManual) && placaCavalo) {
-      const hoje = new Date().toISOString().slice(0, 10);
+      const hoje = getTodayLocalBR();
       const cleanCpf = cpfInput.replace(/\D/g, '');
       const normPlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
       const placaCavaloNorm = normPlaca(placaCavalo);
@@ -315,7 +315,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     const newChk: ChecklistDiario = {
       id: `chk-ini-${Date.now()}`,
       jornadaId,
-      dataHora: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      dataHora: getNowLocalBR(),
       veiculoPlaca: placaFinal,
       placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : undefined,
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
@@ -387,8 +387,8 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     const newChkFinal: ChecklistDiario = {
       id: `chk-fim-${Date.now()}`,
       jornadaId: jornadaAtiva?.jornadaId || `jornada-${Date.now()}`,
-      dataHora: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      dataHoraRetorno: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      dataHora: getNowLocalBR(),
+      dataHoraRetorno: getNowLocalBR(),
       veiculoPlaca: placaFinal,
       placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : (jornadaAtiva?.placaCarreta || undefined),
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',

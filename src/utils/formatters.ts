@@ -5,25 +5,67 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const formatNumber = (value: number, decimals = 1): string => {
+export const formatNumber = (value: number, decimals = 0): string => {
   return new Intl.NumberFormat('pt-BR', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
 };
 
-export const formatDateTime = (dateStr: string): string => {
+export const getNowLocalBR = (): string => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const y = now.getFullYear();
+  const m = pad(now.getMonth() + 1);
+  const d = pad(now.getDate());
+  const h = pad(now.getHours());
+  const min = pad(now.getMinutes());
+  return `${y}-${m}-${d} ${h}:${min}`;
+};
+
+export const getTodayLocalBR = (): string => {
+  return getNowLocalBR().slice(0, 10);
+};
+
+export const formatDateTime = (dateStr?: string): string => {
   if (!dateStr) return '-';
   try {
-    const date = new Date(dateStr.replace(' ', 'T'));
+    let date = new Date(dateStr.replace(' ', 'T'));
+    const now = new Date();
+    
+    // Auto-correção para timestamps salvos com toISOString() UTC (3 horas à frente do horário do Brasil)
+    const diffHours = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (diffHours > 0.5 && diffHours < 5) {
+      date = new Date(date.getTime() - 3 * 3600 * 1000);
+    }
+
     if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1);
+    const year = date.getFullYear();
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    const isYesterday =
+      date.getDate() === now.getDate() - 1 &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      return `Hoje às ${hours}:${minutes}`;
+    }
+    if (isYesterday) {
+      return `Ontem às ${hours}:${minutes}`;
+    }
+
+    return `${day}/${month}/${year} às ${hours}:${minutes}`;
   } catch {
     return dateStr;
   }
