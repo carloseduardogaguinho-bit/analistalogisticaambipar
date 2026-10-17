@@ -350,21 +350,44 @@ export const App: React.FC = () => {
   // Helper para normalização e comparação segura de placas automotivas
   const normalizePlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
-  // Handlers: Checklists com Sincronização Automática de Odômetro & Segurança de Revisão
   const handleAddChecklist = (chk: ChecklistDiario) => {
+    const chkPlacaNorm = normalizePlaca(chk.veiculoPlaca);
+
     setChecklists((prev) => {
-      const updated = [chk, ...prev];
+      let updated = [chk, ...prev];
+
+      // Se for Retorno à Base, encerra a jornada do checklist inicial de saída correspondente
+      if (chk.tipoInspecao === 'Retorno à Base') {
+        updated = updated.map((item) => {
+          const matchJornadaId = chk.jornadaId && item.jornadaId === chk.jornadaId;
+          const matchPlacaEEstado =
+            normalizePlaca(item.veiculoPlaca) === chkPlacaNorm &&
+            item.tipoInspecao === 'Saída para Viagem' &&
+            item.statusJornada === 'Em Jornada';
+
+          if (item.id !== chk.id && (matchJornadaId || matchPlacaEEstado)) {
+            return {
+              ...item,
+              statusJornada: 'Jornada Concluída' as const,
+              kmFinal: chk.kmFinal,
+              kmPercorrido: chk.kmPercorrido,
+              dataHoraRetorno: chk.dataHoraRetorno || chk.dataHora,
+            };
+          }
+          return item;
+        });
+      }
+
       saveStoredChecklists(updated);
       return updated;
     });
 
-    const chkPlacaNorm = normalizePlaca(chk.veiculoPlaca);
     const novoKm = chk.kmFinal && chk.kmFinal > 0 ? chk.kmFinal : chk.kmInicial;
     let revisaoVencidaDetectada = false;
     let proximaRevMeta = 0;
     let veiculoAfetado: Veiculo | undefined;
 
-    // Atualiza odômetro do veículo conforme o momento da inspeção
+    // Atualiza odômetro do veículo e libera o veículo na base caso seja encerramento/retorno
     setVeiculos((prev) => {
       const updated = prev.map((v) => {
         if (normalizePlaca(v.placa) === chkPlacaNorm) {
@@ -374,8 +397,10 @@ export const App: React.FC = () => {
           let newStatus = v.status;
           if (chk.resultado === 'Reprovado - Bloqueado') {
             newStatus = 'Em Manutenção';
-          } else if (v.status === 'Em Viagem' && (chk.tipoInspecao === 'Retorno à Base' || chk.kmFinal)) {
-            newStatus = 'Disponível';
+          } else if (chk.tipoInspecao === 'Retorno à Base' || chk.kmFinal) {
+            newStatus = 'Disponível'; // Veículo liberado na base para outro condutor ou próxima escala!
+          } else if (chk.tipoInspecao === 'Saída para Viagem') {
+            newStatus = 'Em Viagem'; // Veículo ocupado e em trânsito
           }
 
           const kmAtualizado = novoKm && novoKm > v.odometroAtualKm ? novoKm : v.odometroAtualKm;
@@ -914,9 +939,7 @@ export const App: React.FC = () => {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenPortalMotorista={() => {
           if (typeof window !== 'undefined') {
-            const url = new URL(window.location.origin + window.location.pathname);
-            url.searchParams.set('portal', 'motorista');
-            window.open(url.toString(), '_blank');
+            window.open(`${window.location.origin}/?portal=motorista`, '_blank');
           } else {
             setIsPortalMotorista(true);
           }
@@ -1005,9 +1028,7 @@ export const App: React.FC = () => {
               onAtualizarKmManual={handleAtualizarKmManual}
               onOpenPortalMotorista={() => {
                 if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.origin + window.location.pathname);
-                  url.searchParams.set('portal', 'motorista');
-                  window.open(url.toString(), '_blank');
+                  window.open(`${window.location.origin}/?portal=motorista`, '_blank');
                 } else {
                   setIsPortalMotorista(true);
                 }

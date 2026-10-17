@@ -27,7 +27,7 @@ import {
   Check,
   Fuel
 } from 'lucide-react';
-import { formatNumber, getNowLocalBR, getTodayLocalBR } from '../utils/formatters';
+import { formatNumber, getNowLocalBR, getTodayLocalBR, formatDateTime, calcDuracaoJornadaFormatada } from '../utils/formatters';
 
 interface PortalMotoristaChecklistProps {
   veiculos: Veiculo[];
@@ -69,6 +69,27 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   // Checklist Inicial Aberto Hoje para este veículo
   const [jornadaAtiva, setJornadaAtiva] = useState<ChecklistDiario | null>(null);
   const [ultimoChecklistCriado, setUltimoChecklistCriado] = useState<ChecklistDiario | null>(null);
+
+  // Resumo Detalhado da Jornada Concluída (Horários de Saída e Retorno, Período de Trabalho e Liberação)
+  const [resumoJornadaConcluida, setResumoJornadaConcluida] = useState<{
+    protocolo: string;
+    veiculoPlaca: string;
+    placaCarreta?: string;
+    motoristaNome: string;
+    motoristaCpf?: string;
+    segundoMotoristaNome?: string;
+    ajudanteNome?: string;
+    dataHoraSaida: string;
+    dataHoraRetorno: string;
+    periodoJornada: string;
+    kmInicial: number;
+    kmFinal: number;
+    kmPercorrido: number;
+    resultado: ChecklistDiario['resultado'];
+    temAvariaRetorno: boolean;
+    descricaoAvariasRetorno?: string;
+    severidadeAvariaRetorno?: string;
+  } | null>(null);
 
   // Form State: Checklist Inicial (Pré-Jornada)
   const [inicialData, setInicialData] = useState({
@@ -169,12 +190,68 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     }
   }, [motoristas, veiculos]);
 
-  // Se veículos chegarem e placaCavalo ainda estiver vazia, sugerir o primeiro
+  // Recuperar sessão salva previamente no aparelho, se houver
   useEffect(() => {
-    if (!placaCavalo && veiculos.length > 0) {
-      setPlacaCavalo(veiculos[0].placa);
+    const saved = localStorage.getItem('ambipar_motorista_sessao_placa');
+    if (saved && !placaCavalo) {
+      setPlacaCavalo(saved);
     }
-  }, [veiculos, placaCavalo]);
+  }, []);
+
+  // Limpar e liberar veículo para iniciar checklist com outro veículo
+  const handleIniciarOutroVeiculo = () => {
+    setPlacaCavalo('');
+    setPlacaCarreta('');
+    setModoCarreta('sem_carreta');
+    setSegundoMotoristaNome('');
+    setSegundoMotoristaCpf('');
+    setModoSegundoMotorista('sem_segundo');
+    setAjudanteNome('');
+    setAjudanteCpf('');
+    setModoAjudante('sem_ajudante');
+    setJornadaAtiva(null);
+    setResumoJornadaConcluida(null);
+    setUltimoChecklistCriado(null);
+    localStorage.removeItem('ambipar_motorista_sessao_placa');
+    localStorage.removeItem('ambipar_motorista_sessao_carreta');
+    setInicialData({
+      kmInicial: 50000,
+      nivelCombustivel: 'Cheio (100%)',
+      nivelArla32: 'Normal (>50%)',
+      pneusPressaoEEstado: true,
+      freiosEstacionamentoEServico: true,
+      luzesESinalizacao: true,
+      extintoresPQSValidade: true,
+      kitEmergenciaAmbipar: true,
+      vazamentoFluidos: true,
+      documentacaoMTRCIVCIPP: true,
+      tacografoDiscoOuDigital: true,
+      episObrigatorios: true,
+      niveisOleoRadiador: true,
+      limpezaCabine: true,
+      possuiAvarias: false,
+      descricaoAvarias: '',
+      localAvaria: 'Parachoque / Dianteira',
+      severidadeAvaria: 'Leve (Apenas Visual/Estética)',
+      observacoes: '',
+    });
+    setFinalData({
+      kmFinal: 50250,
+      nivelCombustivel: '3/4',
+      nivelArla32: 'Normal (>50%)',
+      pneusEstadoRetorno: true,
+      freiosEstadoRetorno: true,
+      residuosDescarregados: true,
+      kitEmergenciaIntacto: true,
+      limpezaFinal: true,
+      avariasRetornoDetectadas: false,
+      descricaoAvariasRetorno: '',
+      localAvariaRetorno: 'Lataria / Lateral',
+      severidadeAvariaRetorno: 'Leve (Apenas Visual/Estética)',
+      observacoes: '',
+    });
+    setStep('select_tipo');
+  };
 
   // Verificar se há jornada inicial aberta hoje para este veículo/motorista
   useEffect(() => {
@@ -350,6 +427,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       assinaturaDigitalMotorista: `${motoristaLogado?.nome || nomeMotoristaManual} (CPF: ${cpfInput})`,
     };
 
+    setResumoJornadaConcluida(null);
     onAddChecklist(newChk);
     setUltimoChecklistCriado(newChk);
     setJornadaAtiva(newChk);
@@ -367,7 +445,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       return;
     }
 
-    const kmIni = jornadaAtiva?.kmInicial || 50000;
+    const kmIni = jornadaAtiva?.kmInicial || (inicialData.kmInicial ? Number(inicialData.kmInicial) : 50000);
     const kmFim = Number(finalData.kmFinal) || kmIni;
     if (kmFim < kmIni) {
       alert(`O Km Final (${kmFim}) não pode ser menor que o Km Inicial da jornada (${kmIni}). Verifique o hodômetro no painel.`);
@@ -375,6 +453,9 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     }
 
     const kmPercorrido = kmFim - kmIni;
+    const dataHoraRetornoLocal = getNowLocalBR();
+    const dataHoraSaidaLocal = jornadaAtiva?.dataHora || dataHoraRetornoLocal;
+    const periodoFormatado = calcDuracaoJornadaFormatada(dataHoraSaidaLocal, dataHoraRetornoLocal);
 
     // Critérios de aprovação do encerramento
     let resultado: ChecklistDiario['resultado'] = 'Aprovado - Liberado';
@@ -387,8 +468,8 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     const newChkFinal: ChecklistDiario = {
       id: `chk-fim-${Date.now()}`,
       jornadaId: jornadaAtiva?.jornadaId || `jornada-${Date.now()}`,
-      dataHora: getNowLocalBR(),
-      dataHoraRetorno: getNowLocalBR(),
+      dataHora: dataHoraRetornoLocal,
+      dataHoraRetorno: dataHoraRetornoLocal,
       veiculoPlaca: placaFinal,
       placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : (jornadaAtiva?.placaCarreta || undefined),
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
@@ -424,7 +505,32 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
 
     onAddChecklist(newChkFinal);
     setUltimoChecklistCriado(newChkFinal);
+
+    // Registra o dossiê da jornada para visualização pós-conclusão
+    setResumoJornadaConcluida({
+      protocolo: newChkFinal.id,
+      veiculoPlaca: placaFinal,
+      placaCarreta: newChkFinal.placaCarreta,
+      motoristaNome: newChkFinal.motoristaNome,
+      motoristaCpf: cpfInput,
+      segundoMotoristaNome: newChkFinal.segundoMotoristaNome,
+      ajudanteNome: newChkFinal.ajudanteNome,
+      dataHoraSaida: dataHoraSaidaLocal,
+      dataHoraRetorno: dataHoraRetornoLocal,
+      periodoJornada: periodoFormatado,
+      kmInicial: kmIni,
+      kmFinal: kmFim,
+      kmPercorrido,
+      resultado,
+      temAvariaRetorno: Boolean(finalData.avariasRetornoDetectadas),
+      descricaoAvariasRetorno: finalData.descricaoAvariasRetorno,
+      severidadeAvariaRetorno: finalData.severidadeAvariaRetorno,
+    });
+
+    // Encerra jornada e libera veículo no aparelho
     setJornadaAtiva(null);
+    localStorage.removeItem('ambipar_motorista_sessao_placa');
+    localStorage.removeItem('ambipar_motorista_sessao_carreta');
     setStep('sucesso');
   };
 
@@ -595,9 +701,10 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                     onChange={(e) => setPlacaCavalo(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-mono font-bold focus:outline-none focus:border-ambipar-500"
                   >
+                    <option value="">Selecione o Veículo / Cavalo Mecânico...</option>
                     {veiculos.map((v) => (
                       <option key={v.id} value={v.placa}>
-                        {v.placa} - {v.modelo} ({v.tipoEquipamento})
+                        {v.placa} - {v.modelo} ({v.tipoEquipamento}) {v.status === 'Disponível' ? '• [Livre na Base]' : `• [${v.status}]`}
                       </option>
                     ))}
                   </select>
@@ -1404,85 +1511,254 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
         )}
 
         {/* =========================================================
-            PASSO 5: TELA DE SUCESSO & PROTOCOLO DO MOTORISTA
+            PASSO 5: TELA DE SUCESSO & DOSSIÊ OPERACIONAL DO MOTORISTA
             ========================================================= */}
-        {step === 'sucesso' && ultimoChecklistCriado && (
-          <div className="space-y-6 my-auto text-center animate-fadeIn">
+        {step === 'sucesso' && (resumoJornadaConcluida || ultimoChecklistCriado) && (
+          <div className="space-y-5 my-auto text-center animate-fadeIn max-w-lg mx-auto">
             <div className="w-20 h-20 rounded-3xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/30">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                Checklist Enviado com Sucesso!
-              </h2>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                As informações foram sincronizadas e registradas na Central Operacional da Ambipar Logistics.
-              </p>
-            </div>
+            {resumoJornadaConcluida ? (
+              /* =====================================================
+                 CASO A: JORNADA FINALIZADA (RETORNO À BASE CONCLUÍDO)
+                 ===================================================== */
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-mono font-bold uppercase tracking-wider border border-emerald-500/20">
+                    Jornada Operacional Encerrada
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
+                    Checklist Final & Retorno Homologados!
+                  </h2>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    A jornada foi concluída com sucesso, os hodômetros foram sincronizados na central e o veículo foi liberado na base.
+                  </p>
+                </div>
 
-            {/* Crachá Digital de Confirmação */}
-            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 text-left space-y-3 shadow-xl">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Protocolo de Envio:</span>
-                <span className="font-mono text-xs font-bold text-emerald-400">{ultimoChecklistCriado.id}</span>
+                {/* Dossiê Técnico da Jornada Encerrada */}
+                <div className="p-5 rounded-3xl bg-slate-900 border border-emerald-500/40 text-left space-y-4 shadow-2xl">
+                  {/* Veículo Liberado */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-emerald-400">Veículo Liberado na Base:</div>
+                        <strong className="font-mono text-base text-white">{resumoJornadaConcluida.veiculoPlaca}</strong>
+                        {resumoJornadaConcluida.placaCarreta && (
+                          <span className="text-xs font-mono text-cyan-300 ml-2 font-semibold">
+                            Carreta: {resumoJornadaConcluida.placaCarreta}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Disponível
+                    </span>
+                  </div>
+
+                  {/* Quadro: Horários de Saída, Retorno e Período de Trabalho */}
+                  <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Horários & Período de Trabalho</span>
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                        <span className="text-[10px] text-slate-500 block">1. Horário de Saída (Início):</span>
+                        <strong className="text-cyan-300 font-mono text-xs">
+                          {formatDateTime(resumoJornadaConcluida.dataHoraSaida)}
+                        </strong>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                        <span className="text-[10px] text-slate-500 block">2. Horário de Retorno (Fim):</span>
+                        <strong className="text-emerald-400 font-mono text-xs">
+                          {formatDateTime(resumoJornadaConcluida.dataHoraRetorno)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-blue-950/40 to-slate-900 border border-blue-500/30 flex items-center justify-between text-xs">
+                      <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        Duração Total da Jornada em Rota:
+                      </span>
+                      <strong className="text-white font-mono text-sm font-black">
+                        {resumoJornadaConcluida.periodoJornada}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Quadro: Hodômetros & Quilometragem Percorrida */}
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">Km Inicial</span>
+                      <strong className="text-slate-200 font-mono text-xs">
+                        {formatNumber(resumoJornadaConcluida.kmInicial)} km
+                      </strong>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-500 block">Km Final</span>
+                      <strong className="text-slate-200 font-mono text-xs">
+                        {formatNumber(resumoJornadaConcluida.kmFinal)} km
+                      </strong>
+                    </div>
+                    <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30">
+                      <span className="text-[10px] text-emerald-400 block font-semibold">Km Rodados</span>
+                      <strong className="text-emerald-300 font-mono text-sm font-black">
+                        {formatNumber(resumoJornadaConcluida.kmPercorrido)} KM
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Tripulação e Resultado Técnico */}
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800/80">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Condutor:</span>
+                      <span className="text-slate-200 font-bold truncate block">
+                        {resumoJornadaConcluida.motoristaNome}
+                      </span>
+                      {resumoJornadaConcluida.segundoMotoristaNome && (
+                        <span className="text-[10px] text-purple-300 block">
+                          2º Mot: {resumoJornadaConcluida.segundoMotoristaNome}
+                        </span>
+                      )}
+                      {resumoJornadaConcluida.ajudanteNome && (
+                        <span className="text-[10px] text-amber-300 block">
+                          Ajudante: {resumoJornadaConcluida.ajudanteNome}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Resultado SASSMAQ:</span>
+                      <span className="font-bold text-emerald-400 block">
+                        {resumoJornadaConcluida.resultado}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        Protocolo: {resumoJornadaConcluida.protocolo}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Avarias Registradas */}
+                  {resumoJornadaConcluida.temAvariaRetorno ? (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+                      <span className="font-bold uppercase tracking-wider block text-[10px] text-rose-400 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Avaria Notificada na Rota ({resumoJornadaConcluida.severidadeAvariaRetorno || 'Avaria'}):
+                      </span>
+                      <p className="text-slate-200">{resumoJornadaConcluida.descricaoAvariasRetorno}</p>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs text-center font-semibold border border-emerald-500/20">
+                      ✓ Veículo entregue sem novas avarias relatadas na viagem
+                    </div>
+                  )}
+                </div>
+
+                {/* Botões de Ação para Outro Veículo ou Encerramento */}
+                <div className="space-y-2.5 pt-2">
+                  <button
+                    onClick={handleIniciarOutroVeiculo}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition active:scale-[0.99]"
+                  >
+                    <Truck className="w-5 h-5" />
+                    <span>Liberar & Iniciar Checklist de Outro Veículo</span>
+                  </button>
+
+                  <button
+                    onClick={() => setStep('select_tipo')}
+                    className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs border border-slate-800 transition"
+                  >
+                    Voltar ao Menu Principal
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full py-2.5 rounded-2xl bg-slate-950 hover:bg-slate-900 text-slate-400 text-xs border border-slate-800/80 transition"
+                  >
+                    Encerrar Turno e Desconectar (Trocar CPF)
+                  </button>
+                </div>
               </div>
+            ) : (
+              /* =====================================================
+                 CASO B: CHECKLIST DE SAÍDA (PRÉ-JORNADA REALIZADO)
+                 ===================================================== */
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[11px] font-mono font-bold uppercase tracking-wider border border-cyan-500/20">
+                    Checklist de Saída Homologado
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">
+                    Veículo Liberado para Viagem!
+                  </h2>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Inspeção pré-jornada registrada com sucesso. O veículo está liberado para iniciar o trajeto.
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase block">Tipo:</span>
-                  <strong className="text-white">{ultimoChecklistCriado.tipoInspecao}</strong>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase block">Cavalo Mecânico:</span>
-                  <strong className="font-mono text-ambipar-400">{ultimoChecklistCriado.veiculoPlaca}</strong>
-                </div>
-                {ultimoChecklistCriado.placaCarreta && (
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase block">Carreta / Tanque:</span>
-                    <strong className="font-mono text-cyan-400">{ultimoChecklistCriado.placaCarreta}</strong>
+                {/* Crachá Digital de Confirmação da Saída */}
+                <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 text-left space-y-3 shadow-xl">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Protocolo de Saída:</span>
+                    <span className="font-mono text-xs font-bold text-cyan-400">{ultimoChecklistCriado?.id}</span>
                   </div>
-                )}
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase block">Condutor:</span>
-                  <span className="text-slate-300 truncate block">{ultimoChecklistCriado.motoristaNome}</span>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Horário de Saída:</span>
+                      <strong className="text-white font-mono">{formatDateTime(ultimoChecklistCriado?.dataHora)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Cavalo Mecânico:</span>
+                      <strong className="font-mono text-ambipar-400">{ultimoChecklistCriado?.veiculoPlaca}</strong>
+                    </div>
+                    {ultimoChecklistCriado?.placaCarreta && (
+                      <div>
+                        <span className="text-[10px] text-slate-500 uppercase block">Carreta / Tanque:</span>
+                        <strong className="font-mono text-cyan-400">{ultimoChecklistCriado.placaCarreta}</strong>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Hodômetro Inicial:</span>
+                      <strong className="text-white font-mono">{formatNumber(ultimoChecklistCriado?.kmInicial || 0)} km</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Condutor:</span>
+                      <span className="text-slate-300 truncate block">{ultimoChecklistCriado?.motoristaNome}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Resultado Técnico:</span>
+                      <span className="font-bold text-emerald-400">{ultimoChecklistCriado?.resultado}</span>
+                    </div>
+                  </div>
+
+                  {ultimoChecklistCriado && ultimoCheckloadAvariasResumo(ultimoChecklistCriado)}
                 </div>
-                {ultimoChecklistCriado.segundoMotoristaNome && (
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase block">2º Condutor:</span>
-                    <span className="text-purple-300 truncate block">{ultimoChecklistCriado.segundoMotoristaNome}</span>
-                  </div>
-                )}
-                {ultimoChecklistCriado.ajudanteNome && (
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase block">Ajudante:</span>
-                    <span className="text-amber-300 truncate block">{ultimoChecklistCriado.ajudanteNome}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-[10px] text-slate-500 uppercase block">Resultado:</span>
-                  <span className="font-bold text-emerald-400">{ultimoChecklistCriado.resultado}</span>
+
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={() => setStep('select_tipo')}
+                    className="w-full py-3.5 rounded-2xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs shadow-lg transition"
+                  >
+                    Entendido / Voltar ao Painel da Viagem
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs border border-slate-800 transition"
+                  >
+                    Encerrar Sessão do Motorista
+                  </button>
                 </div>
               </div>
-
-              {ultimoCheckloadAvariasResumo(ultimoChecklistCriado)}
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={() => setStep('select_tipo')}
-                className="w-full py-3.5 rounded-2xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs shadow-lg transition"
-              >
-                Voltar ao Menu Principal
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs border border-slate-800 transition"
-              >
-                Encerrar Sessão do Motorista
-              </button>
-            </div>
+            )}
           </div>
         )}
       </main>

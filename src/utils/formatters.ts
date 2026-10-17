@@ -71,6 +71,23 @@ export const formatDateTime = (dateStr?: string): string => {
   }
 };
 
+export const calcDuracaoJornadaFormatada = (dataInicioStr?: string, dataFimStr?: string): string => {
+  if (!dataInicioStr || !dataFimStr) return 'Tempo em rota registrado';
+  try {
+    const ini = new Date(dataInicioStr.replace(' ', 'T')).getTime();
+    const fim = new Date(dataFimStr.replace(' ', 'T')).getTime();
+    if (isNaN(ini) || isNaN(fim) || fim < ini) return 'Tempo em rota registrado';
+    const diffMin = Math.floor((fim - ini) / (1000 * 60));
+    const horas = Math.floor(diffMin / 60);
+    const minutos = diffMin % 60;
+    if (horas === 0) return `${minutos} minutos`;
+    if (minutos === 0) return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+    return `${horas} ${horas === 1 ? 'hora' : 'horas'} e ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}`;
+  } catch {
+    return 'Tempo em rota registrado';
+  }
+};
+
 export const getStatusColor = (status: string): { bg: string; text: string; border: string; dot: string } => {
   switch (status) {
     case 'Em Trânsito':
