@@ -28,6 +28,7 @@ import {
   Fuel
 } from 'lucide-react';
 import { formatNumber, getNowLocalBR, getTodayLocalBR, formatDateTime, calcDuracaoJornadaFormatada } from '../utils/formatters';
+import { isVeiculoSemCarreta } from '../utils/crlvParser';
 
 interface PortalMotoristaChecklistProps {
   veiculos: Veiculo[];
@@ -56,6 +57,23 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
   const [placaCavalo, setPlacaCavalo] = useState<string>('');
   const [modoCarreta, setModoCarreta] = useState<'sem_carreta' | 'selecionar' | 'digitar'>('sem_carreta');
   const [placaCarreta, setPlacaCarreta] = useState<string>('');
+
+  // Identificação Inteligente se o Veículo é Rígido (Passeio, VUC, 3/4, Toco, Truck ou Bitruck)
+  const normPlaca = (p?: string) => (p || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const veiculoAtual = veiculos.find((v) => normPlaca(v.placa) === normPlaca(placaCavalo));
+  const veiculoIsRigido = isVeiculoSemCarreta(
+    veiculoAtual || placaCavalo,
+    veiculoAtual?.modelo,
+    veiculoAtual?.tipoTracao
+  );
+
+  // Se o veículo for rígido, limpa e desabilita automaticamente qualquer carreta
+  useEffect(() => {
+    if (veiculoIsRigido) {
+      if (modoCarreta !== 'sem_carreta') setModoCarreta('sem_carreta');
+      if (placaCarreta) setPlacaCarreta('');
+    }
+  }, [veiculoIsRigido, modoCarreta, placaCarreta]);
 
   // Tripulação Adicional
   const [modoSegundoMotorista, setModoSegundoMotorista] = useState<'sem_segundo' | 'selecionar' | 'digitar'>('sem_segundo');
@@ -394,7 +412,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       jornadaId,
       dataHora: getNowLocalBR(),
       veiculoPlaca: placaFinal,
-      placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : undefined,
+      placaCarreta: !veiculoIsRigido && modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : undefined,
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
       motoristaCpf: cpfInput,
       motoristaTelefone: motoristaLogado?.telefone,
@@ -471,7 +489,7 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
       dataHora: dataHoraRetornoLocal,
       dataHoraRetorno: dataHoraRetornoLocal,
       veiculoPlaca: placaFinal,
-      placaCarreta: modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : (jornadaAtiva?.placaCarreta || undefined),
+      placaCarreta: !veiculoIsRigido && modoCarreta !== 'sem_carreta' && placaCarreta.trim() ? placaCarreta.trim().toUpperCase() : (!veiculoIsRigido && jornadaAtiva?.placaCarreta ? jornadaAtiva.placaCarreta : undefined),
       motoristaNome: motoristaLogado?.nome || nomeMotoristaManual || 'Motorista Operacional',
       motoristaCpf: cpfInput,
       segundoMotoristaNome: modoSegundoMotorista !== 'sem_segundo' && segundoMotoristaNome.trim() ? segundoMotoristaNome.trim() : (jornadaAtiva?.segundoMotoristaNome || undefined),
@@ -721,39 +739,58 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
               </div>
 
               {/* 2. PLACA DA CARRETA / SEMIRREBOQUE */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-300">
-                    Carreta / Semirreboque / Tanque (Opcional):
-                  </label>
-                  <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => { setModoCarreta('sem_carreta'); setPlacaCarreta(''); }}
-                      className={`px-2 py-0.5 rounded ${modoCarreta === 'sem_carreta' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400'}`}
-                    >
-                      Sem Carreta (Toco/Truck)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModoCarreta('digitar')}
-                      className={`px-2 py-0.5 rounded ${modoCarreta === 'digitar' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'}`}
-                    >
-                      Informar Carreta
-                    </button>
+              {veiculoIsRigido ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs text-emerald-300 shadow-sm">
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <strong className="text-white block text-xs">
+                        Veículo Rígido Homologado (Sem Carreta)
+                      </strong>
+                      <span className="text-[11px] text-emerald-300/90 block">
+                        {veiculoAtual?.modelo ? `${veiculoAtual.modelo} (${veiculoAtual.tipoEquipamento})` : placaCavalo} é um veículo de chassi rígido (passeio, VUC, 3/4, toco, truck ou bitruck). Não possui nem requer carreta acoplada.
+                      </span>
+                    </div>
                   </div>
+                  <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-emerald-500/30 text-emerald-200 uppercase shrink-0">
+                    Sem Carreta
+                  </span>
                 </div>
+              ) : (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-300">
+                      Carreta / Semirreboque / Tanque (Opcional):
+                    </label>
+                    <div className="flex items-center text-[10px] gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => { setModoCarreta('sem_carreta'); setPlacaCarreta(''); }}
+                        className={`px-2 py-0.5 rounded ${modoCarreta === 'sem_carreta' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400'}`}
+                      >
+                        Sem Carreta
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModoCarreta('digitar')}
+                        className={`px-2 py-0.5 rounded ${modoCarreta === 'digitar' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400'}`}
+                      >
+                        Informar Carreta
+                      </button>
+                    </div>
+                  </div>
 
-                {modoCarreta === 'digitar' && (
-                  <input
-                    type="text"
-                    placeholder="Placa da Carreta (Ex: REB-9081 ou BXZ1A23)"
-                    value={placaCarreta}
-                    onChange={(e) => setPlacaCarreta(e.target.value.toUpperCase())}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-cyan-500"
-                  />
-                )}
-              </div>
+                  {modoCarreta === 'digitar' && (
+                    <input
+                      type="text"
+                      placeholder="Placa da Carreta (Ex: REB-9081 ou BXZ1A23)"
+                      value={placaCarreta}
+                      onChange={(e) => setPlacaCarreta(e.target.value.toUpperCase())}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-cyan-500"
+                    />
+                  )}
+                </div>
+              )}
 
               {/* 3. SEGUNDO MOTORISTA (REVEZAMENTO) */}
               <div className="space-y-1.5 pt-1">

@@ -43,9 +43,12 @@ import {
   Scale,
   RefreshCw,
   Radio,
-  Zap
+  Zap,
+  FileCheck,
 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
+import { ModalImportadorCrlv } from './ModalImportadorCrlv';
+import { isVeiculoSemCarreta } from '../utils/crlvParser';
 
 interface FrotaViewProps {
   veiculos: Veiculo[];
@@ -61,12 +64,19 @@ interface FrotaViewProps {
 }
 
 const EQUIPAMENTOS: TipoEquipamento[] = [
+  'Caminhão Truck (Pesado 6x2)',
+  'Caminhão Bitruck (8x2)',
+  'Caminhão Toco (Semipesado 4x2)',
+  'Caminhão 3/4 (Leve)',
+  'VUC Coleta Urbana',
+  'Veículo de Passeio / Utilitário',
+  'Cavalo Mecânico (Trucado 6x2)',
+  'Cavalo Mecânico (Traçado 6x4)',
   'Carreta Tanque Inox',
   'Roll-on / Roll-off',
   'Poliguindaste Duplo',
   'Carreta Baú Carga Seca',
   'Sider Especial',
-  'VUC Coleta Urbana',
   'Veículo Rápido Emergência',
   'Tanque Sucção a Vácuo',
   'Prancha Carrega-Tudo',
@@ -117,6 +127,7 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCrlvModalOpen, setIsCrlvModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dossieVeiculo, setDossieVeiculo] = useState<Veiculo | null>(null);
   const [activeFormTab, setActiveFormTab] = useState<'veiculo' | 'implemento' | 'manutencao' | 'laudos'>('veiculo');
@@ -127,6 +138,33 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
   const [kmModalNovoKm, setKmModalNovoKm] = useState<number>(50000);
   const [kmModalOrigem, setKmModalOrigem] = useState<string>('Checklist Fim de Rota / Retorno XD');
   const [kmModalObs, setKmModalObs] = useState<string>('');
+
+  // Handlers para Importação via CRLV-e Digital
+  const handleImportarCrlvParaFormulario = (dadosVeiculo: Partial<Veiculo>) => {
+    setEditingId(null);
+    setFormData({
+      ...initialFormState,
+      ...dadosVeiculo,
+    });
+    setActiveFormTab('veiculo');
+    setIsModalOpen(true);
+    setSyncToast({
+      show: true,
+      count: 1,
+      message: `Dados do CRLV da placa ${dadosVeiculo.placa} carregados! Revise os detalhes cadastrais e salve.`,
+    });
+    setTimeout(() => setSyncToast(null), 5000);
+  };
+
+  const handleCadastrarDiretoViaCrlv = (novoVeiculo: Veiculo) => {
+    onAddVeiculo(novoVeiculo);
+    setSyncToast({
+      show: true,
+      count: 1,
+      message: `Veículo ${novoVeiculo.placa} (${novoVeiculo.modelo}) cadastrado diretamente na frota via CRLV Digital!`,
+    });
+    setTimeout(() => setSyncToast(null), 5000);
+  };
 
   // Form State
   const initialFormState: Partial<Veiculo> = {
@@ -467,6 +505,18 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
           </button>
 
           <button
+            onClick={() => setIsCrlvModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-ambipar-500/20 hover:from-emerald-500/30 hover:to-ambipar-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+            title="Importar CRLV-e Digital (PDF, Imagem ou Texto do Senatran) e preencher automaticamente"
+          >
+            <FileCheck className="w-4 h-4 text-emerald-400" />
+            <span>Importar CRLV Digital</span>
+            <span className="text-[9px] bg-emerald-500/30 px-1.5 py-0.5 rounded-full text-emerald-200 uppercase font-black">
+              Auto
+            </span>
+          </button>
+
+          <button
             onClick={handleExportCsv}
             className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
             title="Exportar inventário patrimonial da frota em CSV"
@@ -754,7 +804,7 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                   {/* Top Bar: Placa, Ano, Status */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="font-mono text-base font-black text-white bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 tracking-wider">
                           {v.placa}
                         </span>
@@ -764,6 +814,22 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800/80 text-amber-400">
                           {v.tipoTracao || '6x2'}
                         </span>
+                        {isVeiculoSemCarreta(v) ? (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1" title="Veículo rígido: chassi unificado sem carreta/semirreboque">
+                            <ShieldCheck className="w-2.5 h-2.5" />
+                            <span>Rígido (Sem Carreta)</span>
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 flex items-center gap-1" title="Cavalo mecânico articulado">
+                            <Truck className="w-2.5 h-2.5" />
+                            <span>Articulado</span>
+                          </span>
+                        )}
+                        {v.crlvDigitalImportado && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-ambipar-500/20 text-ambipar-300 border border-ambipar-500/40" title="Veículo importado e validado via CRLV-e">
+                            CRLV-e OK
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-bold text-white text-xs mt-1.5 flex items-center gap-1.5">
                         <span>{v.marca} {v.modelo}</span>
@@ -1005,7 +1071,23 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                     </td>
 
                     <td className="py-3 px-3">
-                      <span className="text-ambipar-400 font-semibold block">{v.tipoEquipamento}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-ambipar-400 font-semibold">{v.tipoEquipamento}</span>
+                        {isVeiculoSemCarreta(v) ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            Sem Carreta
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                            Articulado
+                          </span>
+                        )}
+                        {v.crlvDigitalImportado && (
+                          <span className="text-[8px] px-1 py-0.2 rounded font-black bg-ambipar-500/20 text-ambipar-300">
+                            CRLV
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-slate-500 font-mono">
                         {v.tipoPropriedade || 'Frota Própria'} &bull; {v.tipoTracao || '6x2'}
                       </span>
@@ -1288,11 +1370,45 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
               </button>
             </div>
 
+            {/* Banner de Importação Rápida via CRLV */}
+            {!editingId && (
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-ambipar-500/15 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="text-white block text-xs">
+                      Prefere preenchimento automático? Importar dados do CRLV Digital
+                    </strong>
+                    <span className="text-[11px] text-slate-400 block">
+                      Importe o documento do Senatran/Detran (PDF, foto ou texto) e preencha Placa, Renavam, Chassi, Ano e PBT sem digitar.
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCrlvModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shrink-0 flex items-center gap-1.5 transition shadow-md active:scale-95"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  <span>Importar CRLV</span>
+                </button>
+              </div>
+            )}
+
             {/* Modal Tabs */}
             <div className="flex items-center gap-1 border-b border-slate-800 pb-2">
               {[
                 { id: 'veiculo', label: '1. Veículo & Chassi', icon: Truck },
-                { id: 'implemento', label: '2. Implemento & Carga', icon: Scale },
+                {
+                  id: 'implemento',
+                  label: isVeiculoSemCarreta(formData.tipoEquipamento, formData.modelo, formData.tipoTracao)
+                    ? '2. Carroceria (Rígido)'
+                    : '2. Implemento & Carga',
+                  icon: Scale,
+                },
                 { id: 'manutencao', label: '3. Odômetro & Revisão', icon: Wrench },
                 { id: 'laudos', label: '4. Laudos (CIV/CIPP)', icon: ShieldCheck },
               ].map((tab) => {
@@ -1465,11 +1581,52 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                 </div>
               )}
 
-              {/* TAB 2: Implemento & Carga */}
+              {/* TAB 2: Implemento & Carga / Carroceria Rígida */}
               {activeFormTab === 'implemento' && (
                 <div className="space-y-3">
+                  {/* Banner de Identificação Estrutural: Rígido (Sem Carreta) vs Articulado */}
+                  {isVeiculoSemCarreta(formData.tipoEquipamento, formData.modelo, formData.tipoTracao) ? (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div>
+                          <strong className="text-white block text-xs">
+                            Veículo Rígido Homologado: Carreta / Semirreboque NÃO se aplica
+                          </strong>
+                          <span className="text-[11px] text-emerald-300/90 block">
+                            Veículos como Carro de Passeio, VUC, 3/4, Toco, Truck e Bitruck possuem carroceria montada no próprio chassi (sem carreta acoplada).
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-emerald-500/30 text-emerald-200 uppercase shrink-0">
+                        Chassi Rígido
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <Truck className="w-5 h-5 text-cyan-400 shrink-0" />
+                        <div>
+                          <strong className="text-white block text-xs">
+                            Cavalo Mecânico Articulado
+                          </strong>
+                          <span className="text-[11px] text-cyan-300/90 block">
+                            Veículo trator que opera acoplado a carretas tanques inox, baús de carga seca, siders ou pranchas carrega-tudo.
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-cyan-500/30 text-cyan-200 uppercase shrink-0">
+                        Articulado
+                      </span>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Tipo de Equipamento / Implemento *</label>
+                    <label className="block text-slate-400 font-semibold mb-1">
+                      {isVeiculoSemCarreta(formData.tipoEquipamento, formData.modelo, formData.tipoTracao)
+                        ? 'Tipo de Carroceria Rígida / Equipamento Integrado *'
+                        : 'Tipo de Equipamento / Implemento Articulado *'}
+                    </label>
                     <select
                       value={formData.tipoEquipamento}
                       onChange={(e) => setFormData({ ...formData, tipoEquipamento: e.target.value as TipoEquipamento })}
@@ -1908,6 +2065,14 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal do Importador de CRLV-e Digital */}
+      <ModalImportadorCrlv
+        isOpen={isCrlvModalOpen}
+        onClose={() => setIsCrlvModalOpen(false)}
+        onImportarParaFormulario={handleImportarCrlvParaFormulario}
+        onCadastrarDireto={handleCadastrarDiretoViaCrlv}
+      />
     </div>
   );
 };

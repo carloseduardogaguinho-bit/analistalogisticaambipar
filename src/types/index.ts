@@ -9,15 +9,27 @@ export type StatusViagem =
   | 'Ocorrência';
 
 export type TipoEquipamento =
+  | 'Veículo de Passeio / Utilitário'
+  | 'VUC Coleta Urbana'
+  | 'Caminhão 3/4 (Leve)'
+  | 'Caminhão Toco (Semipesado 4x2)'
+  | 'Caminhão Truck (Pesado 6x2)'
+  | 'Caminhão Bitruck (8x2)'
+  | 'Cavalo Mecânico (Trucado 6x2)'
+  | 'Cavalo Mecânico (Traçado 6x4)'
   | 'Carreta Tanque Inox'
   | 'Roll-on / Roll-off'
   | 'Poliguindaste Duplo'
   | 'Carreta Baú Carga Seca'
   | 'Sider Especial'
-  | 'VUC Coleta Urbana'
   | 'Veículo Rápido Emergência'
   | 'Tanque Sucção a Vácuo'
   | 'Prancha Carrega-Tudo';
+
+export type CategoriaEstruturalVeiculo = 
+  | 'Veículo Rígido (Sem Carreta)' 
+  | 'Cavalo Mecânico (Articulado c/ Carreta)' 
+  | 'Semirreboque / Carreta';
 
 export type TipoPropriedadeVeiculo = 'Frota Própria Ambipar' | 'Locado / Leasing' | 'Terceiro / Agregado';
 export type TipoTracaoVeiculo = '4x2 (Toco)' | '6x2 (Trucado)' | '6x4 (Traçado)' | '8x2 (Bitruck)' | 'Semirreboque / Carreta';
@@ -275,6 +287,20 @@ export interface Veiculo {
   // Combustível & Telemetria
   tipoCombustivelPadrao: TipoCombustivel;
   mediaConsumoMeta?: number; // km/L
+
+  // Classificação Estrutural (Rígido vs Cavalo Articulado)
+  categoriaVeiculo?: CategoriaEstruturalVeiculo;
+  isSemCarreta?: boolean;
+
+  // Dados Extraídos do CRLV-e Digital (Senatran / Detran)
+  crlvDigitalImportado?: boolean;
+  renavamExercicio?: number;
+  proprietarioNome?: string;
+  proprietarioCnpj?: string;
+  municipioUf?: string;
+  especieTipoCrlv?: string;
+  carroceriaCrlv?: string;
+  pbtKg?: number;
 
   // Certificações Regulamentares e Laudos (SASSMAQ / Inmetro / ANTT)
   numeroCiv?: string;

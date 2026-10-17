@@ -57,6 +57,7 @@ import {
   formatNumber,
   getNowLocalBR,
   getTodayLocalBR,
+  isVeiculoSemCarreta,
 } from '../utils/formatters';
 
 interface ChecklistViewProps {
@@ -1092,12 +1093,17 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                         <span className="font-mono text-sm font-black text-white">{j.veiculoPlaca}</span>
                       </div>
 
-                      {j.placaCarreta && (
+                      {j.placaCarreta ? (
                         <div className="flex items-center gap-1.5 bg-cyan-950/50 px-2.5 py-1.5 rounded-xl border border-cyan-500/30">
                           <span className="text-[10px] text-cyan-400 font-semibold uppercase">Carreta:</span>
                           <span className="font-mono text-xs font-bold text-cyan-200">{j.placaCarreta}</span>
                         </div>
-                      )}
+                      ) : isVeiculoSemCarreta(j.veiculo || j.veiculoPlaca) ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-950/50 px-2.5 py-1.5 rounded-xl border border-emerald-500/30" title="Veículo rígido: sem carreta acoplada">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-[10px] text-emerald-300 font-bold uppercase">Rígido (Sem Carreta)</span>
+                        </div>
+                      ) : null}
 
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5">
