@@ -10,6 +10,8 @@ import {
   Search,
   QrCode,
   Sparkles,
+  BookOpen,
+  HardDrive,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -24,6 +26,8 @@ interface NavbarProps {
   onOpenRadarSassmaq?: () => void;
   onOpenBuscaGlobal?: () => void;
   onCarregarCenarioDemo?: () => void;
+  onOpenBackupModal?: () => void;
+  onOpenManualPopModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenRadarSassmaq,
   onOpenBuscaGlobal,
   onCarregarCenarioDemo,
+  onOpenBackupModal,
+  onOpenManualPopModal,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-3 sm:px-4 lg:px-8 flex items-center justify-between gap-2">
@@ -135,6 +141,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Smartphone className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Portal Motorista</span>
+          </button>
+        )}
+
+        {/* Manual Operacional POP */}
+        {onOpenManualPopModal && (
+          <button
+            type="button"
+            onClick={onOpenManualPopModal}
+            title="Manual Operacional do Analista &middot; POP Ambipar (SASSMAQ, MTR/SINIR, Emergências 24h e Saving)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-ambipar-400" />
+            <span className="hidden 2xl:inline">Manual POP</span>
+          </button>
+        )}
+
+        {/* Central de Backup de Dados */}
+        {onOpenBackupModal && (
+          <button
+            type="button"
+            onClick={onOpenBackupModal}
+            title="Central de Backup &amp; Restauração de Dados (Exportar/Importar JSON seguro)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition"
+          >
+            <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden 2xl:inline">Backup</span>
           </button>
         )}
 

@@ -81,6 +81,8 @@ import { PortalMotoristaChecklist } from './components/PortalMotoristaChecklist'
 import { ModalQrCodeChecklist } from './components/ModalQrCodeChecklist';
 import { ModalRadarSassmaq } from './components/ModalRadarSassmaq';
 import { ModalBuscaGlobal } from './components/ModalBuscaGlobal';
+import { ModalBackupDados, BackupDataStructure } from './components/ModalBackupDados';
+import { ModalManualPopAmbipar } from './components/ModalManualPopAmbipar';
 import {
   DEMO_VEICULOS,
   DEMO_MOTORISTAS,
@@ -107,6 +109,8 @@ export const App: React.FC = () => {
   const [qrCodePlacaSelecionada, setQrCodePlacaSelecionada] = useState<string | undefined>(undefined);
   const [isRadarSassmaqOpen, setIsRadarSassmaqOpen] = useState(false);
   const [isBuscaGlobalOpen, setIsBuscaGlobalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isManualPopModalOpen, setIsManualPopModalOpen] = useState(false);
 
   const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -313,6 +317,27 @@ export const App: React.FC = () => {
 
       alert('Base Operacional Ambipar carregada com sucesso! Você está pronto para o seu primeiro dia com excelência total.');
     }
+  };
+
+  // Restaurar Backup Geral de Dados (.json)
+  const handleRestaurarBackup = (backup: BackupDataStructure) => {
+    if (!backup?.dados) return;
+    const { dados } = backup;
+    if (dados.veiculos) { setVeiculos(dados.veiculos); saveStoredVeiculos(dados.veiculos); }
+    if (dados.motoristas) { setMotoristas(dados.motoristas); saveStoredMotoristas(dados.motoristas); }
+    if (dados.viagens) { setViagens(dados.viagens); saveStoredViagens(dados.viagens); }
+    if (dados.checklists) { setChecklists(dados.checklists); saveStoredChecklists(dados.checklists); }
+    if (dados.manutencoes) { setManutencoes(dados.manutencoes); saveStoredManutencoes(dados.manutencoes); }
+    if (dados.cotacoes) { setCotacoes(dados.cotacoes); saveStoredCotacoes(dados.cotacoes); }
+    if (dados.medicoes) { setMedicoes(dados.medicoes); saveStoredMedicoes(dados.medicoes); }
+    if (dados.abastecimentos) { setAbastecimentos(dados.abastecimentos); saveStoredAbastecimentos(dados.abastecimentos); }
+    if (dados.mtrs) { setMtrs(dados.mtrs); saveStoredMTRs(dados.mtrs); }
+    if (dados.licencas) { setLicencas(dados.licencas); saveStoredLicencas(dados.licencas); }
+    if (dados.ocorrencias) { setOcorrencias(dados.ocorrencias); saveStoredOcorrencias(dados.ocorrencias); }
+    if (dados.cdfs) { setCdfs(dados.cdfs); saveStoredCdfs(dados.cdfs); }
+    if (dados.ctes) { setCtes(dados.ctes); saveStoredCtes(dados.ctes); }
+    if (dados.mdfes) { setMdfes(dados.mdfes); saveStoredMdfes(dados.mdfes); }
+    if (dados.empresaFiscal) { setEmpresaFiscal(dados.empresaFiscal); saveStoredEmpresaFiscal(dados.empresaFiscal); }
   };
 
   // Handlers: Viagens
@@ -1081,6 +1106,8 @@ export const App: React.FC = () => {
         onOpenRadarSassmaq={() => setIsRadarSassmaqOpen(true)}
         onOpenBuscaGlobal={() => setIsBuscaGlobalOpen(true)}
         onCarregarCenarioDemo={handleCarregarCenarioDemoAmbipar}
+        onOpenBackupModal={() => setIsBackupModalOpen(true)}
+        onOpenManualPopModal={() => setIsManualPopModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -1317,12 +1344,42 @@ export const App: React.FC = () => {
           setIsQrCodeModalOpen(true);
         }}
         onOpenRadarSassmaq={() => setIsRadarSassmaqOpen(true)}
+        onOpenBackupModal={() => setIsBackupModalOpen(true)}
+        onOpenManualPopModal={() => setIsManualPopModalOpen(true)}
         veiculos={veiculos}
         motoristas={motoristas}
         viagens={viagens}
         mtrs={mtrs}
         cdfs={cdfs}
         ctes={ctes}
+      />
+
+      {/* Modal de Backup & Restauração de Dados JSON */}
+      <ModalBackupDados
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        viagens={viagens}
+        checklists={checklists}
+        manutencoes={manutencoes}
+        cotacoes={cotacoes}
+        medicoes={medicoes}
+        abastecimentos={abastecimentos}
+        mtrs={mtrs}
+        licencas={licencas}
+        ocorrencias={ocorrencias}
+        cdfs={cdfs}
+        ctes={ctes}
+        mdfes={mdfes}
+        empresaFiscal={empresaFiscal}
+        onRestaurarBackup={handleRestaurarBackup}
+      />
+
+      {/* Modal Manual Operacional POP Ambipar */}
+      <ModalManualPopAmbipar
+        isOpen={isManualPopModalOpen}
+        onClose={() => setIsManualPopModalOpen(false)}
       />
     </div>
   );

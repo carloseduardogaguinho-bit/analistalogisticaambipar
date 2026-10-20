@@ -1,0 +1,20 @@
+{
+  "short_name": "Ambipar Frota",
+  "name": "Ambipar Logistics Control Tower & Gestão de Frota",
+  "description": "Plataforma Operacional de Gestão de Frota, SASSMAQ, Viagens Químicas e Checklists da Ambipar Logistics",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#00A859",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "scope": "/"
+}

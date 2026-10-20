@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="ambiparGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00C853" />
+      <stop offset="100%" stop-color="#007936" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+  
+  <!-- Background Rounded Box -->
+  <rect width="512" height="512" rx="112" fill="#020617" />
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#ambiparGrad)" fill-opacity="0.12" stroke="#00C853" stroke-width="6" stroke-opacity="0.3" />
+
+  <!-- Central Shield / Truck Icon -->
+  <g transform="translate(96, 96)" filter="url(#shadow)">
+    <!-- Ambipar Emblem Ring -->
+    <circle cx="160" cy="160" r="140" fill="url(#ambiparGrad)" />
+    
+    <!-- White Stylized Truck -->
+    <path d="M70 180 L70 120 C70 110 78 102 88 102 L200 102 C210 102 218 110 218 120 L218 180 Z" fill="#ffffff" />
+    <path d="M218 135 L242 135 C248 135 254 138 257 143 L274 165 C277 169 278 174 278 179 L278 200 C278 206 274 210 268 210 L70 210 Z" fill="#ffffff" />
+    
+    <!-- Windshield -->
+    <path d="M222 142 L240 142 L258 165 L222 165 Z" fill="#007936" />
+    
+    <!-- Wheels -->
+    <circle cx="110" cy="210" r="22" fill="#020617" stroke="#ffffff" stroke-width="6" />
+    <circle cx="110" cy="210" r="8" fill="#00C853" />
+
+    <circle cx="230" cy="210" r="22" fill="#020617" stroke="#ffffff" stroke-width="6" />
+    <circle cx="230" cy="210" r="8" fill="#00C853" />
+
+    <!-- Leaf / ESG Emblem -->
+    <path d="M160 70 C160 70 190 85 190 105 C190 120 176 130 160 130 C144 130 130 120 130 105 C130 85 160 70 160 70 Z" fill="#ffffff" fill-opacity="0.9" />
+  </g>
+</svg>

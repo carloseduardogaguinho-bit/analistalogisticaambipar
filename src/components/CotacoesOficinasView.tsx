@@ -17,7 +17,8 @@ import {
   Sparkles,
   PhoneCall,
   Calendar,
-  Layers
+  Layers,
+  Download,
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDateTime } from '../utils/formatters';
 
@@ -135,6 +136,68 @@ export const CotacoesOficinasView: React.FC<CotacoesOficinasViewProps> = ({
     return matchesSearch && matchesStatus;
   });
 
+  const handleExportSavingCsv = () => {
+    if (cotacoes.length === 0) {
+      alert('Nenhuma cotação cadastrada para exportar.');
+      return;
+    }
+
+    const headers = [
+      'Codigo Cotacao',
+      'Placa Veiculo',
+      'Tipo Servico',
+      'Descricao Necessidade',
+      'Qtd Propostas',
+      'Oficina Vencedora / Menor Preco',
+      'Valor Aprovado R$',
+      'Maior Orcamento R$',
+      'Saving Economia R$',
+      'Percentual Saving %',
+      'Status',
+      'Data Abertura',
+      'Data Aprovacao',
+      'Justificativa Escolha'
+    ];
+
+    const rows = cotacoes.map((c) => {
+      const valores = c.propostas.map((p) => p.valorTotal);
+      const menorPreco = valores.length > 0 ? Math.min(...valores) : 0;
+      const maiorPreco = valores.length > 0 ? Math.max(...valores) : 0;
+      const saving = c.economiaSavingReais || (maiorPreco > menorPreco ? maiorPreco - menorPreco : 0);
+      const percentualSaving = maiorPreco > 0 ? ((saving / maiorPreco) * 100).toFixed(1) : '0';
+      const propVencedora = c.propostas.find((p) => p.id === c.propostaVencedoraId);
+      const oficinaGanhadora = propVencedora ? propVencedora.oficinaNome : (c.propostas[0]?.oficinaNome || 'Em analise');
+
+      return [
+        `"${c.codigoCotacao || ''}"`,
+        `"${c.veiculoPlaca || ''}"`,
+        `"${c.tipoServico || ''}"`,
+        `"${c.descricaoNecessidade || ''}"`,
+        c.propostas.length.toString(),
+        `"${oficinaGanhadora}"`,
+        (propVencedora ? propVencedora.valorTotal : menorPreco).toFixed(2).replace('.', ','),
+        maiorPreco.toFixed(2).replace('.', ','),
+        saving.toFixed(2).replace('.', ','),
+        `"${percentualSaving}%"`,
+        `"${c.status || ''}"`,
+        `"${c.dataAbertura || ''}"`,
+        `"${c.dataAprovacao || ''}"`,
+        `"${c.justificativaEscolha || ''}"`,
+      ];
+    });
+
+    const csvContent = [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_saving_oficinas_ambipar_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner and Actions */}
@@ -149,13 +212,25 @@ export const CotacoesOficinasView: React.FC<CotacoesOficinasViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsNovaCotacaoModalOpen(true)}
-          className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/20 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nova Cotação de Oficina</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleExportSavingCsv}
+            title="Exportar Relatório Gerencial de Saving para Suprimentos/Gerência em CSV"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Exportar Saving CSV</span>
+          </button>
+
+          <button
+            onClick={() => setIsNovaCotacaoModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/20 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Cotação de Oficina</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}

@@ -14,7 +14,8 @@ import {
   X,
   CheckCircle,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  Download,
 } from 'lucide-react';
 import { formatNumber, formatCurrency, getStatusColor, formatDateTime } from '../utils/formatters';
 import { getCombustivelColor } from '../utils/esgCalculator';
@@ -160,6 +161,63 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
     });
   };
 
+  const handleExportViagensCsv = () => {
+    if (viagens.length === 0) {
+      alert('Nenhuma viagem cadastrada para exportar.');
+      return;
+    }
+    const headers = [
+      'Codigo Viagem',
+      'Cliente',
+      'Origem',
+      'Destino',
+      'Motorista',
+      'Placa Cavalo',
+      'Placa Carreta',
+      'Tipo Equipamento',
+      'Classe Residuo',
+      'Peso Toneladas',
+      'Distancia Km',
+      'Data Saida Prevista',
+      'Data Chegada Prevista',
+      'Status Operacional',
+      'Numero MTR SINIR',
+      'Numero CTe',
+      'Tipo Combustivel',
+      'Custo Total R$'
+    ];
+    const rows = viagens.map((v) => [
+      `"${v.codigoViagem || ''}"`,
+      `"${v.cliente || ''}"`,
+      `"${v.origem || ''}"`,
+      `"${v.destino || ''}"`,
+      `"${v.motorista || ''}"`,
+      `"${v.placaCavalo || ''}"`,
+      `"${v.placaCarreta || ''}"`,
+      `"${v.tipoEquipamento || ''}"`,
+      `"${v.classeResiduo || ''}"`,
+      v.pesoToneladas?.toString().replace('.', ',') || '0',
+      v.distanciaKm?.toString() || '0',
+      `"${v.dataSaidaPrevista || ''}"`,
+      `"${v.dataChegadaPrevista || ''}"`,
+      `"${v.status || ''}"`,
+      `"${v.numeroMTR || ''}"`,
+      `"${v.numeroCTe || ''}"`,
+      `"${v.tipoCombustivel || ''}"`,
+      v.custoTotal?.toString().replace('.', ',') || '0',
+    ]);
+    const csvContent = [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `viagens_operacionais_ambipar_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and Action */}
@@ -174,13 +232,25 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/20 transition self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Cadastrar Nova Viagem</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleExportViagensCsv}
+            title="Exportar todas as viagens em formato CSV para Excel"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Exportar CSV</span>
+          </button>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/20 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Cadastrar Nova Viagem</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

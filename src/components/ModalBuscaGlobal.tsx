@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   QrCode,
   Sparkles,
+  BookOpen,
+  HardDrive,
 } from 'lucide-react';
 import {
   Veiculo,
@@ -36,6 +38,8 @@ interface ModalBuscaGlobalProps {
   onNavigateToTab: (tab: TabType) => void;
   onOpenQrCode?: (placa?: string) => void;
   onOpenRadarSassmaq?: () => void;
+  onOpenBackupModal?: () => void;
+  onOpenManualPopModal?: () => void;
   veiculos: Veiculo[];
   motoristas: Motorista[];
   viagens: Viagem[];
@@ -62,6 +66,8 @@ export const ModalBuscaGlobal: React.FC<ModalBuscaGlobalProps> = ({
   onNavigateToTab,
   onOpenQrCode,
   onOpenRadarSassmaq,
+  onOpenBackupModal,
+  onOpenManualPopModal,
   veiculos,
   motoristas,
   viagens,
@@ -231,8 +237,30 @@ export const ModalBuscaGlobal: React.FC<ModalBuscaGlobalProps> = ({
         icone: <ShieldCheck className="w-4 h-4 text-emerald-400" />,
       });
     }
+    if (onOpenManualPopModal) {
+      actions.push({
+        id: 'action-pop',
+        tipo: 'acao',
+        titulo: 'Consultar Manual Operacional &middot; POP Ambipar',
+        subtitulo: 'Procedimentos de vistoria SASSMAQ, SINIR/MTR, emergências 24h e saving',
+        badge: 'Guia do Analista',
+        acaoCallback: () => onOpenManualPopModal(),
+        icone: <BookOpen className="w-4 h-4 text-ambipar-400" />,
+      });
+    }
+    if (onOpenBackupModal) {
+      actions.push({
+        id: 'action-backup',
+        tipo: 'acao',
+        titulo: 'Central de Backup &amp; Restauração de Dados',
+        subtitulo: 'Exportar cópia de segurança em JSON ou restaurar cadastros operacionais',
+        badge: 'Proteção Total',
+        acaoCallback: () => onOpenBackupModal(),
+        icone: <HardDrive className="w-4 h-4 text-cyan-400" />,
+      });
+    }
     return actions;
-  }, [onOpenQrCode, onOpenRadarSassmaq]);
+  }, [onOpenQrCode, onOpenRadarSassmaq, onOpenManualPopModal, onOpenBackupModal]);
 
   // Listener global do teclado para abrir com Ctrl+K ou Cmd+K
   useEffect(() => {
