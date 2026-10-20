@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Viagem,
   DocumentoAmbiental,
@@ -78,11 +78,36 @@ import { RelatorioView } from './components/RelatorioView';
 import { PortalFiscalView } from './components/PortalFiscalView';
 import { SupabaseAuthModal } from './components/SupabaseAuthModal';
 import { PortalMotoristaChecklist } from './components/PortalMotoristaChecklist';
+import { ModalQrCodeChecklist } from './components/ModalQrCodeChecklist';
+import { ModalRadarSassmaq } from './components/ModalRadarSassmaq';
+import { ModalBuscaGlobal } from './components/ModalBuscaGlobal';
+import {
+  DEMO_VEICULOS,
+  DEMO_MOTORISTAS,
+  DEMO_VIAGENS,
+  DEMO_CHECKLISTS,
+  DEMO_MANUTENCOES,
+  DEMO_COTACOES,
+  DEMO_MEDICOES,
+  DEMO_ABASTECIMENTOS,
+  DEMO_MTRS,
+  DEMO_LICENCAS,
+  DEMO_OCORRENCIAS,
+  DEMO_CDFS,
+  DEMO_CTES,
+} from './data/cenarioAmbiparDemo';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+
+  // Modais Operacionais de Estreia SASSMAQ
+  const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
+  const [qrCodePlacaSelecionada, setQrCodePlacaSelecionada] = useState<string | undefined>(undefined);
+  const [isRadarSassmaqOpen, setIsRadarSassmaqOpen] = useState(false);
+  const [isBuscaGlobalOpen, setIsBuscaGlobalOpen] = useState(false);
+
   const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
@@ -185,6 +210,110 @@ export const App: React.FC = () => {
   useEffect(() => { if (loaded) saveStoredMedicoes(medicoes); }, [medicoes, loaded]);
   useEffect(() => { if (loaded) saveStoredCotacoes(cotacoes); }, [cotacoes, loaded]);
   useEffect(() => { if (loaded) saveStoredCdfs(cdfs); }, [cdfs, loaded]);
+
+  // Atalho global do teclado Ctrl + K para abrir a Busca Inteligente
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsBuscaGlobalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auditoria Contínua SASSMAQ 360° (alertas críticos e vencimentos <= 30 dias)
+  const sassmaqAlertasCount = useMemo(() => {
+    const hoje = new Date();
+    let count = 0;
+    const calcularDiffDias = (dataStr?: string) => {
+      if (!dataStr) return null;
+      try {
+        const parts = dataStr.split('-');
+        if (parts.length !== 3) return null;
+        const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        return Math.ceil((dt.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      } catch {
+        return null;
+      }
+    };
+
+    // Motoristas
+    motoristas.forEach((m) => {
+      const dCnh = calcularDiffDias(m.validadeCnh);
+      if (dCnh !== null && dCnh <= 30) count++;
+      const dMopp = calcularDiffDias(m.validadeMopp);
+      if (dMopp !== null && dMopp <= 30) count++;
+      const dTox = calcularDiffDias(m.validadeToxico);
+      if (dTox !== null && dTox <= 30) count++;
+      const dAso = calcularDiffDias(m.validadeAso);
+      if (dAso !== null && dAso <= 30) count++;
+    });
+
+    // Veículos
+    veiculos.forEach((v) => {
+      const dCiv = calcularDiffDias(v.validadeCiv);
+      if (dCiv !== null && dCiv <= 30) count++;
+      const dCipp = calcularDiffDias(v.validadeCipp);
+      if (dCipp !== null && dCipp <= 30) count++;
+      const dTaco = calcularDiffDias(v.validadeCronotacografo);
+      if (dTaco !== null && dTaco <= 30) count++;
+      const dLic = calcularDiffDias(v.validadeLicencaAmbiental);
+      if (dLic !== null && dLic <= 30) count++;
+      if (v.proximaRevisaoKm && v.odometroAtualKm && (v.proximaRevisaoKm - v.odometroAtualKm <= 2000)) {
+        count++;
+      }
+    });
+
+    return count;
+  }, [motoristas, veiculos]);
+
+  // Carregar Cenário Operacional de Demonstração Ambipar (1 Clique)
+  const handleCarregarCenarioDemoAmbipar = () => {
+    if (
+      confirm(
+        'Deseja carregar a base de demonstração oficial da AMBIPAR com 1 clique?\n\n' +
+          '• 8 Veículos (Truck 6x2, Bitruck 8x2, VUC Coleta, Carro de Passeio e Cavalos Trucados)\n' +
+          '• 6 Motoristas e Tripulantes (titulares, revezamento e ajudantes)\n' +
+          '• Viagens com resíduos industriais Classe I e II\n' +
+          '• 4 Cotações de Oficinas com R$ 38.450,00 de saving homologado\n' +
+          '• MTRs SINIR/SIGOR e Certificados de Destinação Final (CDF)\n' +
+          '• Checklists diários e telemetria de consumo\n\n' +
+          'Essa base deixará a plataforma impecável para sua apresentação!'
+      )
+    ) {
+      setVeiculos(DEMO_VEICULOS);
+      setMotoristas(DEMO_MOTORISTAS);
+      setViagens(DEMO_VIAGENS);
+      setChecklists(DEMO_CHECKLISTS);
+      setManutencoes(DEMO_MANUTENCOES);
+      setCotacoes(DEMO_COTACOES);
+      setMedicoes(DEMO_MEDICOES);
+      setAbastecimentos(DEMO_ABASTECIMENTOS);
+      setMtrs(DEMO_MTRS);
+      setLicencas(DEMO_LICENCAS);
+      setOcorrencias(DEMO_OCORRENCIAS);
+      setCdfs(DEMO_CDFS);
+      setCtes(DEMO_CTES);
+
+      saveStoredVeiculos(DEMO_VEICULOS);
+      saveStoredMotoristas(DEMO_MOTORISTAS);
+      saveStoredViagens(DEMO_VIAGENS);
+      saveStoredChecklists(DEMO_CHECKLISTS);
+      saveStoredManutencoes(DEMO_MANUTENCOES);
+      saveStoredCotacoes(DEMO_COTACOES);
+      saveStoredMedicoes(DEMO_MEDICOES);
+      saveStoredAbastecimentos(DEMO_ABASTECIMENTOS);
+      saveStoredMTRs(DEMO_MTRS);
+      saveStoredLicencas(DEMO_LICENCAS);
+      saveStoredOcorrencias(DEMO_OCORRENCIAS);
+      saveStoredCdfs(DEMO_CDFS);
+      saveStoredCtes(DEMO_CTES);
+
+      alert('Base Operacional Ambipar carregada com sucesso! Você está pronto para o seu primeiro dia com excelência total.');
+    }
+  };
 
   // Handlers: Viagens
   const handleAddViagem = (newTrip: Viagem) => {
@@ -935,6 +1064,7 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onRefresh={handleRefresh}
         ocorrenciasCount={ocorrenciasAbertasCount}
+        sassmaqAlertasCount={sassmaqAlertasCount}
         isSupabaseConnected={isSupabaseConnected}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenPortalMotorista={() => {
@@ -944,6 +1074,13 @@ export const App: React.FC = () => {
             setIsPortalMotorista(true);
           }
         }}
+        onOpenQrCodeModal={() => {
+          setQrCodePlacaSelecionada(undefined);
+          setIsQrCodeModalOpen(true);
+        }}
+        onOpenRadarSassmaq={() => setIsRadarSassmaqOpen(true)}
+        onOpenBuscaGlobal={() => setIsBuscaGlobalOpen(true)}
+        onCarregarCenarioDemo={handleCarregarCenarioDemoAmbipar}
       />
 
       {/* Main Container */}
@@ -993,6 +1130,10 @@ export const App: React.FC = () => {
               onSincronizarOdometros={handleSincronizarOdometros}
               onAtualizarKmManual={handleAtualizarKmManual}
               onNavigateToTab={setActiveTab}
+              onOpenQrCode={(placa) => {
+                setQrCodePlacaSelecionada(placa);
+                setIsQrCodeModalOpen(true);
+              }}
             />
           )}
 
@@ -1146,6 +1287,42 @@ export const App: React.FC = () => {
         isOpen={isSupabaseModalOpen}
         onClose={() => setIsSupabaseModalOpen(false)}
         onConnectionChange={(connected) => setIsSupabaseConnected(connected)}
+      />
+
+      {/* Modal Operacional de QR Code dos Caminhões (Adesivo de Cabine) */}
+      <ModalQrCodeChecklist
+        isOpen={isQrCodeModalOpen}
+        onClose={() => setIsQrCodeModalOpen(false)}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        placaInicial={qrCodePlacaSelecionada}
+      />
+
+      {/* Modal Radar SASSMAQ 360° (Auditoria de Validades e Conformidade) */}
+      <ModalRadarSassmaq
+        isOpen={isRadarSassmaqOpen}
+        onClose={() => setIsRadarSassmaqOpen(false)}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        onNavigateToTab={setActiveTab}
+      />
+
+      {/* Modal de Busca Global Inteligente (Command Palette Ctrl + K) */}
+      <ModalBuscaGlobal
+        isOpen={isBuscaGlobalOpen}
+        onClose={() => setIsBuscaGlobalOpen(false)}
+        onNavigateToTab={setActiveTab}
+        onOpenQrCode={(placa) => {
+          setQrCodePlacaSelecionada(placa);
+          setIsQrCodeModalOpen(true);
+        }}
+        onOpenRadarSassmaq={() => setIsRadarSassmaqOpen(true)}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        viagens={viagens}
+        mtrs={mtrs}
+        cdfs={cdfs}
+        ctes={ctes}
       />
     </div>
   );

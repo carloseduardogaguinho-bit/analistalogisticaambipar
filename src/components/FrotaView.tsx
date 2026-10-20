@@ -45,6 +45,7 @@ import {
   Radio,
   Zap,
   FileCheck,
+  QrCode,
 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 import { ModalImportadorCrlv } from './ModalImportadorCrlv';
@@ -61,6 +62,7 @@ interface FrotaViewProps {
   onSincronizarOdometros?: () => number;
   onAtualizarKmManual?: (veiculoId: string, novoKm: number, observacao?: string) => void;
   onNavigateToTab?: (tab: any) => void;
+  onOpenQrCode?: (placa?: string) => void;
 }
 
 const EQUIPAMENTOS: TipoEquipamento[] = [
@@ -115,6 +117,7 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
   onSincronizarOdometros,
   onAtualizarKmManual,
   onNavigateToTab,
+  onOpenQrCode,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('TODOS');
@@ -524,6 +527,17 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
             <Download className="w-3.5 h-3.5 text-emerald-400" />
             <span>Exportar CSV</span>
           </button>
+
+          {onOpenQrCode && (
+            <button
+              onClick={() => onOpenQrCode()}
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition"
+              title="Gerar e imprimir QR Code para adesivo de para-brisa dos caminhões"
+            >
+              <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+              <span>QR Code Cabine</span>
+            </button>
+          )}
 
           <button
             onClick={handleOpenCreateModal}
@@ -1014,6 +1028,17 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
                       <Gauge className="w-3.5 h-3.5" />
                       <span>Atualizar KM</span>
                     </button>
+
+                    {onOpenQrCode && (
+                      <button
+                        onClick={() => onOpenQrCode(v.placa)}
+                        className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold flex items-center gap-1 transition"
+                        title="Gerar e imprimir QR Code para a cabine deste caminhão"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>QR Cabine</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1">
