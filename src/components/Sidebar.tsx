@@ -16,6 +16,10 @@ import {
   Leaf,
   DollarSign,
   Disc,
+  Timer,
+  FlaskConical,
+  ShieldAlert,
+  CreditCard,
 } from 'lucide-react';
 
 export type TabType =
@@ -47,6 +51,10 @@ interface SidebarProps {
   ctesCount: number;
   onOpenSupabaseModal: () => void;
   isSupabaseConnected: boolean;
+  onOpenEstadias?: () => void;
+  onOpenIncompatibilidade?: () => void;
+  onOpenPaeEmergencia?: () => void;
+  onOpenPedagioPpd?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -59,6 +67,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ctesCount,
   onOpenSupabaseModal,
   isSupabaseConnected,
+  onOpenEstadias,
+  onOpenIncompatibilidade,
+  onOpenPaeEmergencia,
+  onOpenPedagioPpd,
 }) => {
   const operacaoItems = [
     { id: 'dashboard' as TabType, label: 'Torre de Controle', icon: LayoutDashboard, badge: null },
@@ -166,6 +178,80 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             );
           })}
+        </div>
+
+        {/* Section 3: Ferramentas de Elite do Analista Sênior */}
+        <div className="space-y-1 pt-2 border-t border-slate-800/80">
+          <div className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center justify-between">
+            <span>Ferramentas Sênior</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">
+              ELITE
+            </span>
+          </div>
+
+          {onOpenEstadias && (
+            <button
+              type="button"
+              onClick={onOpenEstadias}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl font-medium text-xs text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition"
+            >
+              <div className="flex items-center gap-3">
+                <Timer className="w-4 h-4 text-amber-400" />
+                <span className="truncate">Estadias ANTT (Lei 11.442)</span>
+              </div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                5h+
+              </span>
+            </button>
+          )}
+
+          {onOpenIncompatibilidade && (
+            <button
+              type="button"
+              onClick={onOpenIncompatibilidade}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl font-medium text-xs text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 transition"
+            >
+              <div className="flex items-center gap-3">
+                <FlaskConical className="w-4 h-4 text-purple-400" />
+                <span className="truncate">Incompatibilidade NBR 14619</span>
+              </div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                HAZMAT
+              </span>
+            </button>
+          )}
+
+          {onOpenPaeEmergencia && (
+            <button
+              type="button"
+              onClick={onOpenPaeEmergencia}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl font-medium text-xs text-rose-300 hover:bg-rose-500/10 hover:text-rose-200 transition"
+            >
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                <span className="truncate">PAE Emergência 24h</span>
+              </div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 animate-pulse">
+                24H
+              </span>
+            </button>
+          )}
+
+          {onOpenPedagioPpd && (
+            <button
+              type="button"
+              onClick={onOpenPedagioPpd}
+              className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl font-medium text-xs text-blue-300 hover:bg-blue-500/10 hover:text-blue-200 transition"
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-4 h-4 text-blue-400" />
+                <span className="truncate">Pedágios &amp; PPDs (Lei 13.103)</span>
+              </div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                TAG
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

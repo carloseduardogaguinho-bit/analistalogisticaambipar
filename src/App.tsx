@@ -90,6 +90,10 @@ import { ModalBackupDados, BackupDataStructure } from './components/ModalBackupD
 import { ModalManualPopAmbipar } from './components/ModalManualPopAmbipar';
 import { ModalTorreTv } from './components/ModalTorreTv';
 import { ModalPassagemPlantao } from './components/ModalPassagemPlantao';
+import { ModalGestaoEstadias } from './components/ModalGestaoEstadias';
+import { ModalIncompatibilidadeQuimica } from './components/ModalIncompatibilidadeQuimica';
+import { ModalPaeEmergencia } from './components/ModalPaeEmergencia';
+import { ModalPedagioPpd } from './components/ModalPedagioPpd';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -105,6 +109,10 @@ export const App: React.FC = () => {
   const [isManualPopModalOpen, setIsManualPopModalOpen] = useState(false);
   const [isTorreTvOpen, setIsTorreTvOpen] = useState(false);
   const [isPassagemPlantaoOpen, setIsPassagemPlantaoOpen] = useState(false);
+  const [isEstadiasOpen, setIsEstadiasOpen] = useState(false);
+  const [isIncompatibilidadeOpen, setIsIncompatibilidadeOpen] = useState(false);
+  const [isPaeEmergenciaOpen, setIsPaeEmergenciaOpen] = useState(false);
+  const [isPedagioPpdOpen, setIsPedagioPpdOpen] = useState(false);
 
   const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1474,6 +1482,10 @@ export const App: React.FC = () => {
         onOpenManualPopModal={() => setIsManualPopModalOpen(true)}
         onOpenTorreTv={() => setIsTorreTvOpen(true)}
         onOpenPassagemPlantao={() => setIsPassagemPlantaoOpen(true)}
+        onOpenEstadias={() => setIsEstadiasOpen(true)}
+        onOpenIncompatibilidade={() => setIsIncompatibilidadeOpen(true)}
+        onOpenPaeEmergencia={() => setIsPaeEmergenciaOpen(true)}
+        onOpenPedagioPpd={() => setIsPedagioPpdOpen(true)}
       />
 
       {/* Main Container */}
@@ -1489,6 +1501,10 @@ export const App: React.FC = () => {
           ctesCount={ctes.length}
           onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
           isSupabaseConnected={isSupabaseConnected}
+          onOpenEstadias={() => setIsEstadiasOpen(true)}
+          onOpenIncompatibilidade={() => setIsIncompatibilidadeOpen(true)}
+          onOpenPaeEmergencia={() => setIsPaeEmergenciaOpen(true)}
+          onOpenPedagioPpd={() => setIsPedagioPpdOpen(true)}
         />
 
         {/* Content Area */}
@@ -1802,6 +1818,32 @@ export const App: React.FC = () => {
         manutencoes={manutencoes}
         ocorrencias={ocorrencias}
         mtrs={mtrs}
+      />
+
+      {/* Modal Gestão de Estadias ANTT (Lei 11.442) */}
+      <ModalGestaoEstadias
+        isOpen={isEstadiasOpen}
+        onClose={() => setIsEstadiasOpen(false)}
+        viagens={viagens}
+      />
+
+      {/* Modal Matriz de Incompatibilidade Química NBR 14619 */}
+      <ModalIncompatibilidadeQuimica
+        isOpen={isIncompatibilidadeOpen}
+        onClose={() => setIsIncompatibilidadeOpen(false)}
+      />
+
+      {/* Modal Plano de Atendimento a Emergências (PAE 24h Ambipar Response) */}
+      <ModalPaeEmergencia
+        isOpen={isPaeEmergenciaOpen}
+        onClose={() => setIsPaeEmergenciaOpen(false)}
+        viagens={viagens}
+      />
+
+      {/* Modal Calculador de Pedágios por Eixos & PPDs (Lei 13.103) */}
+      <ModalPedagioPpd
+        isOpen={isPedagioPpdOpen}
+        onClose={() => setIsPedagioPpdOpen(false)}
       />
     </div>
   );

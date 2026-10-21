@@ -14,6 +14,10 @@ import {
   HardDrive,
   Tv,
   ClipboardList,
+  Timer,
+  FlaskConical,
+  CreditCard,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -31,6 +35,10 @@ interface NavbarProps {
   onOpenManualPopModal?: () => void;
   onOpenTorreTv?: () => void;
   onOpenPassagemPlantao?: () => void;
+  onOpenEstadias?: () => void;
+  onOpenIncompatibilidade?: () => void;
+  onOpenPaeEmergencia?: () => void;
+  onOpenPedagioPpd?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -47,6 +55,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenManualPopModal,
   onOpenTorreTv,
   onOpenPassagemPlantao,
+  onOpenEstadias,
+  onOpenIncompatibilidade,
+  onOpenPaeEmergencia,
+  onOpenPedagioPpd,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-3 sm:px-4 lg:px-8 flex items-center justify-between gap-2">
@@ -116,7 +128,59 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition shadow-sm"
           >
             <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden lg:inline">Passagem Plantão</span>
+            <span className="hidden xl:inline">Passagem Plantão</span>
+          </button>
+        )}
+
+        {/* Gestão de Estadias ANTT */}
+        {onOpenEstadias && (
+          <button
+            type="button"
+            onClick={onOpenEstadias}
+            title="Gestão de Estadias ANTT (Lei 11.442 - Cobrança de Horas Paradas após 5h)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <Timer className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden 2xl:inline">Estadias</span>
+          </button>
+        )}
+
+        {/* Incompatibilidade Química NBR 14619 */}
+        {onOpenIncompatibilidade && (
+          <button
+            type="button"
+            onClick={onOpenIncompatibilidade}
+            title="Matriz de Incompatibilidade Química NBR 14619 (Co-transporte e Segregação de Resíduos Perigosos)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden 2xl:inline">Incompatibilidade</span>
+          </button>
+        )}
+
+        {/* PAE 24h & Emergência Ambiental */}
+        {onOpenPaeEmergencia && (
+          <button
+            type="button"
+            onClick={onOpenPaeEmergencia}
+            title="Plano de Atendimento a Emergências (PAE 24h Ambipar Response - Linha 0800 e Contenção)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+            <span className="hidden 2xl:inline">PAE 24h</span>
+          </button>
+        )}
+
+        {/* Pedágios & PPDs Lei 13.103 */}
+        {onOpenPedagioPpd && (
+          <button
+            type="button"
+            onClick={onOpenPedagioPpd}
+            title="Calculador de Pedágio por Eixos &amp; Pontos de Parada Homologados (PPD Lei 13.103)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden 2xl:inline">Pedágios</span>
           </button>
         )}
 
