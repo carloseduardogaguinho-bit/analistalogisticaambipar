@@ -1267,6 +1267,10 @@ export const App: React.FC = () => {
         veiculos={veiculos}
         motoristas={motoristas}
         placaInicial={qrCodePlacaSelecionada}
+        onNavigateToCadastroVeiculo={() => {
+          setIsQrCodeModalOpen(false);
+          setActiveTab('frota');
+        }}
       />
 
       {/* Modal Radar SASSMAQ 360° (Auditoria de Validades e Conformidade) */}

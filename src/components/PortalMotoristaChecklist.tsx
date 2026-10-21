@@ -25,7 +25,8 @@ import {
   Plus,
   Edit3,
   Check,
-  Fuel
+  Fuel,
+  QrCode,
 } from 'lucide-react';
 import { formatNumber, getNowLocalBR, getTodayLocalBR, formatDateTime, calcDuracaoJornadaFormatada } from '../utils/formatters';
 import { isVeiculoSemCarreta } from '../utils/crlvParser';
@@ -169,22 +170,67 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
     setCpfInput(formatCpf(e.target.value));
   };
 
-  // Verificar se há sessão de motorista salva no dispositivo
+  // Verificar parâmetros da URL (QR Code escaneado na cabine) ou sessão salva no aparelho
   useEffect(() => {
     try {
+      let placaUrl = '';
+      let cpfUrl = '';
+      if (typeof window !== 'undefined' && window.location.search) {
+        const urlParams = new URLSearchParams(window.location.search);
+        placaUrl = (urlParams.get('placa') || urlParams.get('veiculo') || '').trim().toUpperCase();
+        cpfUrl = (urlParams.get('cpf') || '').trim();
+      }
+
       const savedCpf = localStorage.getItem('ambipar_motorista_sessao_cpf');
       const savedNome = localStorage.getItem('ambipar_motorista_sessao_nome');
       const savedPlaca = localStorage.getItem('ambipar_motorista_sessao_placa');
       const savedCarreta = localStorage.getItem('ambipar_motorista_sessao_carreta');
 
-      if (savedCpf) {
-        setCpfInput(savedCpf);
-        const mot = motoristas.find((m) => m.cpf.replace(/\D/g, '') === savedCpf.replace(/\D/g, ''));
+      // Se a URL trouxe a placa do QR Code, ela tem prioridade total e imediata
+      const activePlaca = placaUrl || savedPlaca || '';
+
+      if (activePlaca) {
+        // Encontrar se o veículo existe na frota cadastrada
+        const veicMatch = veiculos.find((v) => normPlaca(v.placa) === normPlaca(activePlaca));
+        const placaFinal = veicMatch ? veicMatch.placa : activePlaca;
+
+        setPlacaCavalo(placaFinal);
+        localStorage.setItem('ambipar_motorista_sessao_placa', placaFinal);
+
+        if (veicMatch) {
+          setModoCavalo('selecionar');
+          if (
+            veicMatch.isSemCarreta ||
+            ['passeio', 'carro', 'vuc', '3/4', 'toco', 'truck', 'bitruck'].some((t) =>
+              (veicMatch.tipoEquipamento || '').toLowerCase().includes(t)
+            )
+          ) {
+            setModoCarreta('sem_carreta');
+            setPlacaCarreta('');
+          }
+          if (veicMatch.odometroAtualKm) {
+            setInicialData((prev) => ({ ...prev, kmInicial: veicMatch.odometroAtualKm }));
+          }
+        } else {
+          setModoCavalo('digitar');
+        }
+      }
+
+      // Se a URL ou sessão trouxe o CPF
+      const activeCpf = cpfUrl ? formatCpf(cpfUrl) : savedCpf;
+      if (activeCpf) {
+        setCpfInput(activeCpf);
+        const mot = motoristas.find((m) => m.cpf.replace(/\D/g, '') === activeCpf.replace(/\D/g, ''));
         if (mot) {
           setMotoristaLogado(mot);
           setNomeMotoristaManual(mot.nome);
-          const p = savedPlaca || mot.veiculoFixoPlaca || veiculos[0]?.placa || '';
-          setPlacaCavalo(p);
+          localStorage.setItem('ambipar_motorista_sessao_cpf', activeCpf);
+          localStorage.setItem('ambipar_motorista_sessao_nome', mot.nome);
+          if (!activePlaca && mot.veiculoFixoPlaca) {
+            const p = mot.veiculoFixoPlaca;
+            setPlacaCavalo(p);
+            localStorage.setItem('ambipar_motorista_sessao_placa', p);
+          }
           if (savedCarreta) {
             setPlacaCarreta(savedCarreta);
             setModoCarreta('digitar');
@@ -192,29 +238,19 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
           setStep('select_tipo');
         } else if (savedNome) {
           setNomeMotoristaManual(savedNome);
-          const p = savedPlaca || veiculos[0]?.placa || '';
-          setPlacaCavalo(p);
           if (savedCarreta) {
             setPlacaCarreta(savedCarreta);
             setModoCarreta('digitar');
           }
           setStep('select_tipo');
         }
-      } else if (veiculos.length > 0 && !placaCavalo) {
+      } else if (veiculos.length > 0 && !activePlaca && !placaCavalo) {
         setPlacaCavalo(veiculos[0].placa);
       }
     } catch (e) {
-      console.log('Nenhuma sessão anterior encontrada');
+      console.log('Erro ao inicializar sessão ou parâmetros de URL:', e);
     }
   }, [motoristas, veiculos]);
-
-  // Recuperar sessão salva previamente no aparelho, se houver
-  useEffect(() => {
-    const saved = localStorage.getItem('ambipar_motorista_sessao_placa');
-    if (saved && !placaCavalo) {
-      setPlacaCavalo(saved);
-    }
-  }, []);
 
   // Limpar e liberar veículo para iniciar checklist com outro veículo
   const handleIniciarOutroVeiculo = () => {
@@ -613,6 +649,57 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
               </p>
             </div>
 
+            {/* Banner do Veículo Identificado via QR Code da Cabine */}
+            {placaCavalo && (
+              <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-emerald-500/40 shadow-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Veículo Identificado via QR Code da Cabine</span>
+                  </span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                    Sincronizado
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  {/* Placa Mercosul Estilizada */}
+                  <div className="w-24 rounded-lg border-2 border-slate-950 overflow-hidden bg-white text-slate-950 shrink-0 shadow-md">
+                    <div className="bg-[#003399] text-white text-[8px] font-black px-1.5 py-0.2 flex items-center justify-between">
+                      <span className="text-[7px]">MERCOSUL</span>
+                      <span>🇧🇷</span>
+                    </div>
+                    <div className="text-center font-mono font-black text-base tracking-wider py-0.5 text-slate-950">
+                      {placaCavalo}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <strong className="text-sm text-white block truncate">
+                      {veiculoAtual?.modelo || 'Veículo da Frota'}
+                    </strong>
+                    <span className="text-xs text-slate-400 block truncate">
+                      {veiculoAtual?.tipoTracao || veiculoAtual?.tipoEquipamento || 'Frota Ambipar'} &middot;{' '}
+                      {veiculoIsRigido ? (
+                        <span className="text-emerald-400 font-semibold">Rígido (Sem Carreta)</span>
+                      ) : (
+                        <span className="text-cyan-400 font-semibold">Articulado (Cavalo)</span>
+                      )}
+                    </span>
+                    {veiculoAtual?.motoristaTitularNome && (
+                      <span className="text-[11px] text-slate-500 block truncate">
+                        Titular Cadastrado: {veiculoAtual.motoristaTitularNome}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+                  Informe seu CPF abaixo para assumir a direção deste veículo e liberar o checklist.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleLogin} className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
@@ -735,6 +822,34 @@ export const PortalMotoristaChecklist: React.FC<PortalMotoristaChecklistProps> =
                     onChange={(e) => setPlacaCavalo(e.target.value.toUpperCase())}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-mono font-bold uppercase focus:outline-none focus:border-ambipar-500"
                   />
+                )}
+
+                {/* Badge de Confirmação da Placa Mercosul Selecionada */}
+                {placaCavalo && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-16 rounded border border-slate-700 overflow-hidden bg-white text-slate-950 shrink-0 shadow-sm">
+                        <div className="bg-[#003399] text-white text-[7px] font-black px-1 py-0.2 flex items-center justify-between">
+                          <span>BR</span>
+                          <span>🇧🇷</span>
+                        </div>
+                        <div className="text-[10px] font-mono font-black text-center py-0.5 tracking-wider text-slate-950">
+                          {placaCavalo}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-white font-bold block text-xs">
+                          {veiculoAtual?.modelo || placaCavalo}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">
+                          {veiculoAtual?.tipoTracao || 'Frota Ambipar'} &middot; Odômetro: {veiculoAtual?.odometroAtualKm ? `${veiculoAtual.odometroAtualKm.toLocaleString('pt-BR')} km` : '0 km'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-ambipar-500/20 text-ambipar-300 border border-ambipar-500/30 shrink-0">
+                      Confirmado
+                    </span>
+                  </div>
                 )}
               </div>
 
