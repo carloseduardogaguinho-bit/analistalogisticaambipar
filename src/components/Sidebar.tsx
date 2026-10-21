@@ -14,13 +14,15 @@ import {
   Users,
   Database,
   Leaf,
-  DollarSign
+  DollarSign,
+  Disc,
 } from 'lucide-react';
 
 export type TabType =
   | 'dashboard'
   | 'viagens'
   | 'frota'
+  | 'pneus'
   | 'manutencao'
   | 'cotacoes'
   | 'checklist'
@@ -62,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard' as TabType, label: 'Torre de Controle', icon: LayoutDashboard, badge: null },
     { id: 'viagens' as TabType, label: 'Viagens & Despacho', icon: Truck, badge: viagensCount },
     { id: 'frota' as TabType, label: 'Controle de Frota & Placas', icon: Truck, badge: veiculosCount },
+    { id: 'pneus' as TabType, label: 'Gestão de Pneus & CPK', icon: Disc, badge: 'CPK', badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/40' },
     { id: 'manutencao' as TabType, label: 'Manutenções Programadas', icon: Wrench, badge: manutencoesCount > 0 ? manutencoesCount : null, badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/40' },
     { id: 'cotacoes' as TabType, label: 'Cotações & Oficinas (Saving)', icon: DollarSign, badge: 'SAVING', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
     { id: 'checklist' as TabType, label: 'Checklist Diário', icon: ClipboardCheck, badge: null },

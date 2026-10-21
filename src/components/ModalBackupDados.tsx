@@ -29,6 +29,7 @@ import {
   CteDocumento,
   MdfeDocumento,
   EmpresaFiscalConfig,
+  Pneu,
 } from '../types';
 
 export interface BackupDataStructure {
@@ -51,6 +52,7 @@ export interface BackupDataStructure {
     cdfs: CertificadoDestinacaoFinalCDF[];
     ctes: CteDocumento[];
     mdfes: MdfeDocumento[];
+    pneus?: Pneu[];
     empresaFiscal?: EmpresaFiscalConfig;
   };
 }
@@ -72,6 +74,7 @@ interface ModalBackupDadosProps {
   cdfs: CertificadoDestinacaoFinalCDF[];
   ctes: CteDocumento[];
   mdfes: MdfeDocumento[];
+  pneus: Pneu[];
   empresaFiscal: EmpresaFiscalConfig;
   onRestaurarBackup: (backup: BackupDataStructure) => void;
 }
@@ -93,6 +96,7 @@ export const ModalBackupDados: React.FC<ModalBackupDadosProps> = ({
   cdfs,
   ctes,
   mdfes,
+  pneus,
   empresaFiscal,
   onRestaurarBackup,
 }) => {
@@ -125,6 +129,7 @@ export const ModalBackupDados: React.FC<ModalBackupDadosProps> = ({
         cdfs,
         ctes,
         mdfes,
+        pneus,
         empresaFiscal,
       },
     };

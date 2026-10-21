@@ -20,6 +20,7 @@ import {
   PropostaOficina,
   StatusMedicao,
   CertificadoDestinacaoFinalCDF,
+  Pneu,
 } from './types';
 
 import {
@@ -53,6 +54,8 @@ import {
   saveStoredCotacoes,
   getStoredCdfs,
   saveStoredCdfs,
+  getStoredPneus,
+  saveStoredPneus,
 } from './utils/storage';
 import { ParsedSefazXml } from './utils/sebraeUtils';
 
@@ -63,6 +66,7 @@ import { Sidebar, TabType } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { ViagensView } from './components/ViagensView';
 import { FrotaView } from './components/FrotaView';
+import { PneusView } from './components/PneusView';
 import { ManutencaoView } from './components/ManutencaoView';
 import { CotacoesOficinasView } from './components/CotacoesOficinasView';
 import { ChecklistView } from './components/ChecklistView';
@@ -126,6 +130,7 @@ export const App: React.FC = () => {
   const [medicoes, setMedicoes] = useState<MedicaoContrato[]>([]);
   const [cotacoes, setCotacoes] = useState<CotacaoManutencao[]>([]);
   const [cdfs, setCdfs] = useState<CertificadoDestinacaoFinalCDF[]>([]);
+  const [pneus, setPneus] = useState<Pneu[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   // Initial Load
@@ -148,6 +153,7 @@ export const App: React.FC = () => {
     setMedicoes(getStoredMedicoes());
     setCotacoes(getStoredCotacoes());
     setCdfs(getStoredCdfs());
+    setPneus(getStoredPneus());
     setLoaded(true);
 
     // If Supabase is connected, try to sync from cloud
@@ -201,6 +207,7 @@ export const App: React.FC = () => {
   useEffect(() => { if (loaded) saveStoredMedicoes(medicoes); }, [medicoes, loaded]);
   useEffect(() => { if (loaded) saveStoredCotacoes(cotacoes); }, [cotacoes, loaded]);
   useEffect(() => { if (loaded) saveStoredCdfs(cdfs); }, [cdfs, loaded]);
+  useEffect(() => { if (loaded) saveStoredPneus(pneus); }, [pneus, loaded]);
 
   // Atalho global do teclado Ctrl + K para abrir a Busca Inteligente
   useEffect(() => {
@@ -276,6 +283,7 @@ export const App: React.FC = () => {
     if (dados.licencas) { setLicencas(dados.licencas); saveStoredLicencas(dados.licencas); }
     if (dados.ocorrencias) { setOcorrencias(dados.ocorrencias); saveStoredOcorrencias(dados.ocorrencias); }
     if (dados.cdfs) { setCdfs(dados.cdfs); saveStoredCdfs(dados.cdfs); }
+    if ((dados as any).pneus) { setPneus((dados as any).pneus); saveStoredPneus((dados as any).pneus); }
     if (dados.ctes) { setCtes(dados.ctes); saveStoredCtes(dados.ctes); }
     if (dados.mdfes) { setMdfes(dados.mdfes); saveStoredMdfes(dados.mdfes); }
     if (dados.empresaFiscal) { setEmpresaFiscal(dados.empresaFiscal); saveStoredEmpresaFiscal(dados.empresaFiscal); }
@@ -357,6 +365,21 @@ export const App: React.FC = () => {
 
   const handleDeleteVeiculo = (id: string) => {
     setVeiculos((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  // Handlers: Pneus
+  const handleAddPneu = (pneu: Pneu) => {
+    setPneus((prev) => [pneu, ...prev]);
+  };
+
+  const handleUpdatePneu = (updatedPneu: Pneu) => {
+    setPneus((prev) =>
+      prev.map((p) => (p.id === updatedPneu.id ? updatedPneu : p))
+    );
+  };
+
+  const handleDeletePneu = (id: string) => {
+    setPneus((prev) => prev.filter((p) => p.id !== id));
   };
 
   // Handlers: Motoristas
@@ -1112,6 +1135,16 @@ export const App: React.FC = () => {
             />
           )}
 
+          {activeTab === 'pneus' && (
+            <PneusView
+              pneus={pneus}
+              veiculos={veiculos}
+              onAddPneu={handleAddPneu}
+              onUpdatePneu={handleUpdatePneu}
+              onDeletePneu={handleDeletePneu}
+            />
+          )}
+
           {activeTab === 'manutencao' && (
             <ManutencaoView
               manutencoes={manutencoes}
@@ -1324,6 +1357,7 @@ export const App: React.FC = () => {
         cdfs={cdfs}
         ctes={ctes}
         mdfes={mdfes}
+        pneus={pneus}
         empresaFiscal={empresaFiscal}
         onRestaurarBackup={handleRestaurarBackup}
       />

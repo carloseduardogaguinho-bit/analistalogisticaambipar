@@ -14,6 +14,7 @@ import {
   MedicaoContrato,
   CotacaoManutencao,
   CertificadoDestinacaoFinalCDF,
+  Pneu,
 } from '../types';
 import { INITIAL_EMPRESA_FISCAL } from '../data/fiscalData';
 
@@ -33,6 +34,7 @@ const KEYS = {
   MEDICOES: 'ambipar_logistica_medicoes_v3',
   COTACOES: 'ambipar_logistica_cotacoes_v3',
   CDFS: 'ambipar_logistica_cdfs_v3',
+  PNEUS: 'ambipar_logistica_pneus_v3',
 };
 
 // Limpa automaticamente qualquer dado demo ou resíduo de versões anteriores (v1 e v2)
@@ -201,3 +203,12 @@ export const getStoredCdfs = (): CertificadoDestinacaoFinalCDF[] => {
   try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredCdfs = (data: CertificadoDestinacaoFinalCDF[]) => localStorage.setItem(KEYS.CDFS, JSON.stringify(data));
+
+// Gestão de Pneus & CPK (Inicia 100% limpo)
+export const getStoredPneus = (): Pneu[] => {
+  const data = localStorage.getItem(KEYS.PNEUS);
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
+};
+export const saveStoredPneus = (data: Pneu[]) => localStorage.setItem(KEYS.PNEUS, JSON.stringify(data));
+

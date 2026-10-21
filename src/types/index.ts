@@ -710,3 +710,46 @@ export interface CotacaoManutencao {
   ordemServicoGeradaId?: string;
 }
 
+// =========================================================
+// MÓDULO DE GESTÃO DE PNEUS & CPK (FROTA PESADA)
+// =========================================================
+export type StatusPneu = 'Em Uso' | 'Estoque / Almoxarifado' | 'Em Recapagem' | 'Descartado / Sucata';
+export type VidaPneu = '1ª Vida (Novo)' | '2ª Vida (1ª Recapagem)' | '3ª Vida (2ª Recapagem)' | 'Sucateado';
+export type PosicaoEixoPneu =
+  | '1E'
+  | '1D'
+  | '2EE'
+  | '2EI'
+  | '2DI'
+  | '2DE'
+  | '3EE'
+  | '3EI'
+  | '3DI'
+  | '3DE'
+  | 'Estepe'
+  | 'Almoxarifado';
+
+export interface Pneu {
+  id: string;
+  numeroFogo: string;
+  numeroSerie?: string;
+  marca: 'Michelin' | 'Goodyear' | 'Bridgestone' | 'Pirelli' | 'Continental' | 'Dunlop' | 'Outra';
+  modelo: string;
+  medida: string;
+  vidaAtual: VidaPneu;
+  status: StatusPneu;
+  veiculoPlaca?: string;
+  posicao?: PosicaoEixoPneu;
+  sulcoAtualMm: number;
+  sulcoOriginalMm: number;
+  pressaoPsi?: number;
+  kmAtualPneu: number;
+  kmInstalacao?: number;
+  custoAquisicao: number;
+  custoRecapagens: number;
+  dataAquisicao: string;
+  dataUltimaInspecao?: string;
+  observacoes?: string;
+}
+
+
