@@ -12,7 +12,9 @@ import {
   User,
   LogOut,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  CloudUpload,
+  FileCode2,
 } from 'lucide-react';
 import {
   getSupabaseCredentials,
@@ -26,18 +28,24 @@ interface SupabaseAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConnectionChange: (connected: boolean) => void;
+  onUploadCompletoSupabase?: () => Promise<{ sucesso: boolean; mensagem: string }>;
+  onSyncFromSupabase?: () => Promise<void>;
 }
 
 export const SupabaseAuthModal: React.FC<SupabaseAuthModalProps> = ({
   isOpen,
   onClose,
   onConnectionChange,
+  onUploadCompletoSupabase,
+  onSyncFromSupabase,
 }) => {
   const [url, setUrl] = useState('');
   const [anonKey, setAnonKey] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState<'config' | 'sql' | 'auth'>('config');
   const [copiedSql, setCopiedSql] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFeedback, setUploadFeedback] = useState<string>('');
   const [testStatus, setTestStatus] = useState<string>('');
   const [isTesting, setIsTesting] = useState(false);
 
@@ -117,6 +125,23 @@ export const SupabaseAuthModal: React.FC<SupabaseAuthModalProps> = ({
     navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleExecutarUploadEmMassa = async () => {
+    if (!onUploadCompletoSupabase) return;
+    setIsUploading(true);
+    setUploadFeedback('');
+    try {
+      const res = await onUploadCompletoSupabase();
+      setUploadFeedback(res.mensagem);
+      if (res.sucesso) {
+        setTestStatus(res.mensagem);
+      }
+    } catch (err: any) {
+      setUploadFeedback(err.message || 'Erro durante a sincronização em massa.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -275,6 +300,69 @@ export const SupabaseAuthModal: React.FC<SupabaseAuthModalProps> = ({
               />
             </div>
 
+            {isConnected && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-950 to-teal-950/40 border border-emerald-500/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                    <CloudUpload className="w-4 h-4" />
+                    <span>Sincronização em Massa com o Supabase</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-300 font-bold bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
+                    Nuvem Pronta
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Envie toda a frota, viagens, motoristas e pneus cadastrados na memória para a nuvem em 1 clique para que tudo fique gravado permanentemente no Supabase PostgreSQL.
+                </p>
+
+                {uploadFeedback && (
+                  <div
+                    className={`p-2.5 rounded-lg border text-xs font-semibold ${
+                      uploadFeedback.includes('sucesso') || uploadFeedback.includes('concluída')
+                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                        : 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+                    }`}
+                  >
+                    {uploadFeedback}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleExecutarUploadEmMassa}
+                    disabled={isUploading}
+                    className="w-full sm:flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    {isUploading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CloudUpload className="w-4 h-4" />
+                    )}
+                    <span>
+                      {isUploading
+                        ? 'Enviando para a Nuvem...'
+                        : '☁️ Subir Todos os Dados Locais para o Supabase'}
+                    </span>
+                  </button>
+
+                  {onSyncFromSupabase && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await onSyncFromSupabase();
+                        setUploadFeedback('Dados sincronizados da nuvem com sucesso! ✅');
+                      }}
+                      className="w-full sm:w-auto py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Baixar da Nuvem</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {testStatus && (
               <div className={`p-3 rounded-xl border text-xs font-semibold ${
                 testStatus.includes('sucesso')
@@ -320,16 +408,51 @@ export const SupabaseAuthModal: React.FC<SupabaseAuthModalProps> = ({
         {/* Tab 2: SQL Script */}
         {activeTab === 'sql' && (
           <div className="p-6 space-y-4 text-xs overflow-y-auto">
+            {/* Passo a Passo Super Visual */}
+            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <FileCode2 className="w-4 h-4 text-emerald-400" />
+                <span>Passo a Passo para Executar as Migrations no Supabase</span>
+              </h4>
+              <ol className="space-y-1.5 list-decimal list-inside text-slate-300 text-[11px] leading-relaxed">
+                <li>
+                  Acesse seu painel do Supabase em{' '}
+                  <a
+                    href="https://app.supabase.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-400 hover:underline font-bold inline-flex items-center gap-1"
+                  >
+                    app.supabase.com <ExternalLink className="w-3 h-3" />
+                  </a>{' '}
+                  e abra o seu projeto.
+                </li>
+                <li>
+                  No menu lateral esquerdo, clique no ícone <strong>SQL Editor</strong> (ícone <code>&gt;_</code>).
+                </li>
+                <li>
+                  Clique no botão <strong>+ New Query</strong> para abrir uma aba em branco.
+                </li>
+                <li>
+                  Clique no botão <strong>Copiar Script SQL</strong> abaixo e cole no editor do Supabase.
+                </li>
+                <li>
+                  Clique no botão verde <strong>Run</strong> (ou aperte <code>Ctrl + Enter</code>) para criar as 10 tabelas com RLS habilitado.
+                </li>
+              </ol>
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-slate-300 font-semibold">
-                Copie este script e cole no menu <strong>SQL Editor</strong> do seu Supabase:
+                Script SQL Completo (10 Tabelas da Operação Ambipar):
               </span>
               <button
+                type="button"
                 onClick={handleCopySql}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition"
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition active:scale-95"
               >
                 {copiedSql ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedSql ? 'Copiado!' : 'Copiar Script SQL'}</span>
+                <span>{copiedSql ? 'Copiado para a Área de Transferência!' : 'Copiar Script SQL'}</span>
               </button>
             </div>
 
@@ -337,8 +460,8 @@ export const SupabaseAuthModal: React.FC<SupabaseAuthModalProps> = ({
               <pre>{SUPABASE_SCHEMA_SQL}</pre>
             </div>
 
-            <p className="text-[11px] text-slate-500">
-              * Este script cria as tabelas de <strong>veículos</strong>, <strong>motoristas</strong>, <strong>manutenções</strong>, <strong>checklists</strong>, <strong>abastecimentos</strong> e <strong>viagens</strong> com políticas abertas de segurança RLS.
+            <p className="text-[11px] text-slate-400">
+              * Este script cria as 10 tabelas corporativas: <strong>veículos</strong>, <strong>motoristas</strong>, <strong>viagens</strong>, <strong>manutenções</strong>, <strong>checklists</strong>, <strong>abastecimentos</strong>, <strong>pneus</strong>, <strong>documentos_ambientais (MTR)</strong>, <strong>licencas_veiculos</strong> e <strong>cotacoes_oficinas</strong> com políticas abertas de segurança RLS.
             </p>
           </div>
         )}

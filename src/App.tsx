@@ -168,6 +168,7 @@ export const App: React.FC = () => {
     if (!client) return;
 
     try {
+      // 1. Veículos
       const { data: vData } = await client.from('veiculos').select('*');
       if (vData && vData.length > 0) {
         const mappedVeiculos: Veiculo[] = vData.map((row: any) => ({
@@ -176,19 +177,298 @@ export const App: React.FC = () => {
           modelo: row.modelo,
           marca: row.marca,
           ano: row.ano,
+          anoModelo: row.ano_modelo,
           tipoEquipamento: row.tipo_equipamento,
+          tipoPropriedade: row.tipo_propriedade,
+          tipoTracao: row.tipo_tracao,
           baseOperacional: row.base_operacional,
+          motoristaTitularNome: row.motorista_titular_nome,
           odometroAtualKm: row.odometro_atual_km,
           capacidadeCargaTon: row.capacidade_carga_ton,
           status: row.status,
           proximaRevisaoKm: row.proxima_revisao_km,
           dataUltimaRevisao: row.data_ultima_revisao,
           tipoCombustivelPadrao: row.tipo_combustivel_padrao,
+          isSemCarreta: row.is_sem_carreta,
+          renavam: row.renavam,
+          chassi: row.chassi,
+          cor: row.cor,
+          pbtKg: row.pbt_kg,
+          numeroCiv: row.numero_civ,
+          validadeCiv: row.validade_civ,
+          numeroCipp: row.numero_cipp,
+          validadeCipp: row.validade_cipp,
+          numeroCronotacografo: row.numero_cronotacografo,
+          validadeCronotacografo: row.validade_cronotacografo,
         }));
         setVeiculos(mappedVeiculos);
       }
+
+      // 2. Motoristas
+      const { data: mData } = await client.from('motoristas').select('*');
+      if (mData && mData.length > 0) {
+        const mappedMotoristas: Motorista[] = mData.map((row: any) => ({
+          id: row.id,
+          nome: row.nome,
+          cpf: row.cpf,
+          rg: row.rg,
+          telefone: row.telefone,
+          email: row.email,
+          funcao: row.funcao,
+          matricula: row.matricula,
+          dataAdmissao: row.data_admissao,
+          regimeContratacao: row.regime_contratacao,
+          baseOperacional: row.base_operacional,
+          veiculoFixoPlaca: row.veiculo_fixo_placa,
+          status: row.status,
+          cnh: row.cnh,
+          categoriaCnh: row.categoria_cnh,
+          validadeCnh: row.validade_cnh,
+          validadeMopp: row.validade_mopp,
+          validadeToxico: row.validade_toxico,
+          validadeAso: row.validade_aso,
+          validadeNr20: row.validade_nr20,
+          validadeNr35: row.validade_nr35,
+          scoreEcoconducao: row.score_ecoconducao,
+          mediaConsumoGeral: row.media_consumo_geral,
+        }));
+        setMotoristas(mappedMotoristas);
+      }
+
+      // 3. Viagens
+      const { data: viData } = await client.from('viagens').select('*');
+      if (viData && viData.length > 0) {
+        const mappedViagens: Viagem[] = viData.map((row: any) => ({
+          id: row.id,
+          codigoViagem: row.codigo_viagem,
+          cliente: row.cliente,
+          origem: row.origem,
+          destino: row.destino,
+          baseOperacional: row.base_operacional,
+          motorista: row.motorista,
+          placaCavalo: row.placa_cavalo,
+          placaCarreta: row.placa_carreta,
+          tipoEquipamento: row.tipo_equipamento,
+          classeResiduo: row.classe_residuo,
+          pesoToneladas: Number(row.peso_toneladas) || 0,
+          distanciaKm: Number(row.distancia_km) || 0,
+          dataSaidaPrevista: row.data_saida_prevista,
+          dataChegadaPrevista: row.data_chegada_prevista,
+          status: row.status,
+          numeroMTR: row.numero_mtr || '',
+          numeroCTe: row.numero_cte || '',
+          tipoCombustivel: row.tipo_combustivel || 'Diesel S10',
+          custoTotal: Number(row.custo_total) || 0,
+          observacoes: row.observacoes,
+        }));
+        setViagens(mappedViagens);
+      }
+
+      // 4. Manutenções
+      const { data: manData } = await client.from('manutencoes').select('*');
+      if (manData && manData.length > 0) {
+        const mappedManutencoes: Manutencao[] = manData.map((row: any) => ({
+          id: row.id,
+          veiculoPlaca: row.veiculo_placa,
+          tipo: row.tipo,
+          descricao: row.descricao,
+          kmNoMomento: row.km_no_momento,
+          kmProximaRevisao: row.km_proxima_revisao,
+          dataEntrada: row.data_entrada,
+          dataPrevisaoSaida: row.data_previsao_saida,
+          dataConclusao: row.data_conclusao,
+          oficina: row.oficina,
+          custoTotal: Number(row.custo_total) || 0,
+          status: row.status,
+          responsavelAprovacao: row.responsavel_aprovacao,
+        }));
+        setManutencoes(mappedManutencoes);
+      }
+
+      // 5. Pneus
+      const { data: pnData } = await client.from('pneus').select('*');
+      if (pnData && pnData.length > 0) {
+        const mappedPneus: Pneu[] = pnData.map((row: any) => ({
+          id: row.id,
+          numeroFogo: row.numero_fogo,
+          numeroSerie: row.numero_serie,
+          marca: row.marca,
+          modelo: row.modelo,
+          medida: row.medida,
+          vidaAtual: row.vida_atual,
+          status: row.status,
+          veiculoPlaca: row.veiculo_placa,
+          posicao: row.posicao,
+          sulcoAtualMm: Number(row.sulco_atual_mm) || 0,
+          sulcoOriginalMm: Number(row.sulco_original_mm) || 0,
+          pressaoPsi: row.pressao_psi,
+          kmAtualPneu: Number(row.km_atual_pneu) || 0,
+          kmInstalacao: row.km_instalacao,
+          custoAquisicao: Number(row.custo_aquisicao) || 0,
+          custoRecapagens: Number(row.custo_recapagens) || 0,
+          dataAquisicao: row.data_aquisicao,
+          dataUltimaInspecao: row.data_ultima_inspecao,
+          observacoes: row.observacoes,
+        }));
+        setPneus(mappedPneus);
+      }
     } catch (err) {
       console.log('Supabase sync fallback to local storage:', err);
+    }
+  };
+
+  const handleUploadCompletoSupabase = async (): Promise<{ sucesso: boolean; mensagem: string }> => {
+    const client = getSupabaseClient();
+    if (!client) {
+      return { sucesso: false, mensagem: 'Supabase não configurado. Insira a URL e Anon Key primeiro.' };
+    }
+
+    try {
+      if (veiculos.length > 0) {
+        const payloadVeiculos = veiculos.map((v) => ({
+          id: v.id,
+          placa: v.placa,
+          modelo: v.modelo,
+          marca: v.marca,
+          ano: v.ano,
+          ano_modelo: v.anoModelo || v.ano,
+          tipo_equipamento: v.tipoEquipamento,
+          tipo_propriedade: v.tipoPropriedade,
+          tipo_tracao: v.tipoTracao,
+          base_operacional: v.baseOperacional,
+          motorista_titular_nome: v.motoristaTitularNome,
+          odometro_atual_km: v.odometroAtualKm,
+          capacidade_carga_ton: v.capacidadeCargaTon,
+          status: v.status,
+          proxima_revisao_km: v.proximaRevisaoKm,
+          data_ultima_revisao: v.dataUltimaRevisao || null,
+          tipo_combustivel_padrao: v.tipoCombustivelPadrao,
+          is_sem_carreta: v.isSemCarreta || false,
+          renavam: v.renavam || null,
+          chassi: v.chassi || null,
+          cor: v.cor || null,
+          pbt_kg: v.pbtKg || null,
+          numero_civ: v.numeroCiv || null,
+          validade_civ: v.validadeCiv || null,
+          numero_cipp: v.numeroCipp || null,
+          validade_cipp: v.validadeCipp || null,
+          numero_cronotacografo: v.numeroCronotacografo || null,
+          validade_cronotacografo: v.validadeCronotacografo || null,
+        }));
+        await client.from('veiculos').upsert(payloadVeiculos, { onConflict: 'id' });
+      }
+
+      if (motoristas.length > 0) {
+        const payloadMotoristas = motoristas.map((m) => ({
+          id: m.id,
+          nome: m.nome,
+          cpf: m.cpf,
+          rg: m.rg || null,
+          telefone: m.telefone || null,
+          email: m.email || null,
+          funcao: m.funcao || 'Motorista Titular',
+          matricula: m.matricula || null,
+          data_admissao: m.dataAdmissao || null,
+          regime_contratacao: m.regimeContratacao || 'CLT Ambipar',
+          base_operacional: m.baseOperacional,
+          veiculo_fixo_placa: m.veiculoFixoPlaca || null,
+          status: m.status,
+          cnh: m.cnh,
+          categoria_cnh: m.categoriaCnh,
+          validade_cnh: m.validadeCnh,
+          validade_mopp: m.validadeMopp,
+          validade_toxico: m.validadeToxico,
+          validade_aso: m.validadeAso || null,
+          validade_nr20: m.validadeNr20 || null,
+          validade_nr35: m.validadeNr35 || null,
+          score_ecoconducao: m.scoreEcoconducao || 90,
+          media_consumo_geral: m.mediaConsumoGeral || 2.65,
+        }));
+        await client.from('motoristas').upsert(payloadMotoristas, { onConflict: 'id' });
+      }
+
+      if (viagens.length > 0) {
+        const payloadViagens = viagens.map((vi) => ({
+          id: vi.id,
+          codigo_viagem: vi.codigoViagem,
+          cliente: vi.cliente,
+          origem: vi.origem,
+          destino: vi.destino,
+          base_operacional: vi.baseOperacional,
+          motorista: vi.motorista,
+          placa_cavalo: vi.placaCavalo,
+          placa_carreta: vi.placaCarreta || null,
+          tipo_equipamento: vi.tipoEquipamento,
+          classe_residuo: vi.classeResiduo,
+          peso_toneladas: vi.pesoToneladas,
+          distancia_km: vi.distanciaKm,
+          data_saida_prevista: vi.dataSaidaPrevista,
+          data_chegada_prevista: vi.dataChegadaPrevista,
+          status: vi.status,
+          numero_mtr: vi.numeroMTR || null,
+          numero_cte: vi.numeroCTe || null,
+          tipo_combustivel: vi.tipoCombustivel || 'Diesel S10',
+          custo_total: vi.custoTotal || 0,
+          observacoes: vi.observacoes || null,
+        }));
+        await client.from('viagens').upsert(payloadViagens, { onConflict: 'id' });
+      }
+
+      if (manutencoes.length > 0) {
+        const payloadMan = manutencoes.map((mn) => ({
+          id: mn.id,
+          veiculo_placa: mn.veiculoPlaca,
+          tipo: mn.tipo,
+          descricao: mn.descricao,
+          km_no_momento: mn.kmNoMomento,
+          km_proxima_revisao: mn.kmProximaRevisao || null,
+          data_entrada: mn.dataEntrada,
+          data_previsao_saida: mn.dataPrevisaoSaida || null,
+          data_conclusao: mn.dataConclusao || null,
+          oficina: mn.oficina,
+          custo_total: mn.custoTotal,
+          status: mn.status,
+          responsavel_aprovacao: mn.responsavelAprovacao,
+        }));
+        await client.from('manutencoes').upsert(payloadMan, { onConflict: 'id' });
+      }
+
+      if (pneus.length > 0) {
+        const payloadPneus = pneus.map((pn) => ({
+          id: pn.id,
+          numero_fogo: pn.numeroFogo,
+          numero_serie: pn.numeroSerie || null,
+          marca: pn.marca,
+          modelo: pn.modelo,
+          medida: pn.medida,
+          vida_atual: pn.vidaAtual,
+          status: pn.status,
+          veiculo_placa: pn.veiculoPlaca || null,
+          posicao: pn.posicao || null,
+          sulco_atual_mm: pn.sulcoAtualMm,
+          sulco_original_mm: pn.sulcoOriginalMm,
+          pressao_psi: pn.pressaoPsi || null,
+          km_atual_pneu: pn.kmAtualPneu || 0,
+          km_instalacao: pn.kmInstalacao || null,
+          custo_aquisicao: pn.custoAquisicao || 0,
+          custo_recapagens: pn.custoRecapagens || 0,
+          data_aquisicao: pn.dataAquisicao,
+          data_ultima_inspecao: pn.dataUltimaInspecao || null,
+          observacoes: pn.observacoes || null,
+        }));
+        await client.from('pneus').upsert(payloadPneus, { onConflict: 'id' });
+      }
+
+      return {
+        sucesso: true,
+        mensagem: `Sincronização concluída! ${veiculos.length} veículos, ${motoristas.length} motoristas, ${viagens.length} viagens e ${pneus.length} pneus salvos com sucesso no Supabase.`,
+      };
+    } catch (err: any) {
+      console.error('Erro no upload para Supabase:', err);
+      return {
+        sucesso: false,
+        mensagem: err.message || 'Erro ao sincronizar com o Supabase. Execute o script da migration SQL primeiro.',
+      };
     }
   };
 
@@ -315,17 +595,53 @@ export const App: React.FC = () => {
       viagemId: newTrip.id,
     };
     setMtrs((prev) => [autoMtr, ...prev]);
+
+    // Salvar viagem no Supabase se conectado
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('viagens').insert([{
+        id: newTrip.id,
+        codigo_viagem: newTrip.codigoViagem,
+        cliente: newTrip.cliente,
+        origem: newTrip.origem,
+        destino: newTrip.destino,
+        base_operacional: newTrip.baseOperacional,
+        motorista: newTrip.motorista,
+        placa_cavalo: newTrip.placaCavalo,
+        placa_carreta: newTrip.placaCarreta || null,
+        tipo_equipamento: newTrip.tipoEquipamento,
+        classe_residuo: newTrip.classeResiduo,
+        peso_toneladas: newTrip.pesoToneladas,
+        distancia_km: newTrip.distanciaKm,
+        data_saida_prevista: newTrip.dataSaidaPrevista,
+        data_chegada_prevista: newTrip.dataChegadaPrevista,
+        status: newTrip.status,
+        numero_mtr: newTrip.numeroMTR || null,
+        numero_cte: newTrip.numeroCTe || null,
+        tipo_combustivel: newTrip.tipoCombustivel || 'Diesel S10',
+        custo_total: newTrip.custoTotal || 0,
+        observacoes: newTrip.observacoes || null,
+      }]).then(() => {});
+    }
   };
 
   const handleUpdateViagemStatus = (id: string, newStatus: StatusViagem) => {
     setViagens((prev) =>
       prev.map((v) => (v.id === id ? { ...v, status: newStatus } : v))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('viagens').update({ status: newStatus }).eq('id', id).then(() => {});
+    }
   };
 
   const handleDeleteViagem = (id: string) => {
     if (confirm('Deseja excluir esta viagem?')) {
       setViagens((prev) => prev.filter((v) => v.id !== id));
+      const client = getSupabaseClient();
+      if (client) {
+        client.from('viagens').delete().eq('id', id).then(() => {});
+      }
     }
   };
 
@@ -341,13 +657,19 @@ export const App: React.FC = () => {
         modelo: veic.modelo,
         marca: veic.marca,
         ano: veic.ano,
+        ano_modelo: veic.anoModelo || veic.ano,
         tipo_equipamento: veic.tipoEquipamento,
+        tipo_propriedade: veic.tipoPropriedade,
+        tipo_tracao: veic.tipoTracao,
         base_operacional: veic.baseOperacional,
+        motorista_titular_nome: veic.motoristaTitularNome,
         odometro_atual_km: veic.odometroAtualKm,
         capacidade_carga_ton: veic.capacidadeCargaTon,
         status: veic.status,
         proxima_revisao_km: veic.proximaRevisaoKm,
+        data_ultima_revisao: veic.dataUltimaRevisao || null,
         tipo_combustivel_padrao: veic.tipoCombustivelPadrao,
+        is_sem_carreta: veic.isSemCarreta || false,
       }]).then(() => {});
     }
   };
@@ -356,31 +678,85 @@ export const App: React.FC = () => {
     setVeiculos((prev) =>
       prev.map((v) => (v.id === id ? { ...v, status } : v))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('veiculos').update({ status }).eq('id', id).then(() => {});
+    }
   };
 
   const handleUpdateVeiculo = (updatedVeic: Veiculo) => {
     setVeiculos((prev) =>
       prev.map((v) => (v.id === updatedVeic.id ? updatedVeic : v))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('veiculos').update({
+        placa: updatedVeic.placa,
+        modelo: updatedVeic.modelo,
+        marca: updatedVeic.marca,
+        ano: updatedVeic.ano,
+        status: updatedVeic.status,
+        odometro_atual_km: updatedVeic.odometroAtualKm,
+        capacidade_carga_ton: updatedVeic.capacidadeCargaTon,
+      }).eq('id', updatedVeic.id).then(() => {});
+    }
   };
 
   const handleDeleteVeiculo = (id: string) => {
     setVeiculos((prev) => prev.filter((v) => v.id !== id));
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('veiculos').delete().eq('id', id).then(() => {});
+    }
   };
 
   // Handlers: Pneus
   const handleAddPneu = (pneu: Pneu) => {
     setPneus((prev) => [pneu, ...prev]);
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('pneus').insert([{
+        id: pneu.id,
+        numero_fogo: pneu.numeroFogo,
+        marca: pneu.marca,
+        modelo: pneu.modelo,
+        medida: pneu.medida,
+        vida_atual: pneu.vidaAtual,
+        status: pneu.status,
+        veiculo_placa: pneu.veiculoPlaca || null,
+        posicao: pneu.posicao || null,
+        sulco_atual_mm: pneu.sulcoAtualMm,
+        sulco_original_mm: pneu.sulcoOriginalMm,
+        pressao_psi: pneu.pressaoPsi || null,
+        km_atual_pneu: pneu.kmAtualPneu || 0,
+        custo_aquisicao: pneu.custoAquisicao || 0,
+        data_aquisicao: pneu.dataAquisicao,
+      }]).then(() => {});
+    }
   };
 
   const handleUpdatePneu = (updatedPneu: Pneu) => {
     setPneus((prev) =>
       prev.map((p) => (p.id === updatedPneu.id ? updatedPneu : p))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('pneus').update({
+        status: updatedPneu.status,
+        veiculo_placa: updatedPneu.veiculoPlaca || null,
+        posicao: updatedPneu.posicao || null,
+        sulco_atual_mm: updatedPneu.sulcoAtualMm,
+        km_atual_pneu: updatedPneu.kmAtualPneu,
+      }).eq('id', updatedPneu.id).then(() => {});
+    }
   };
 
   const handleDeletePneu = (id: string) => {
     setPneus((prev) => prev.filter((p) => p.id !== id));
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('pneus').delete().eq('id', id).then(() => {});
+    }
   };
 
   // Handlers: Motoristas
@@ -408,16 +784,38 @@ export const App: React.FC = () => {
     setMotoristas((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status } : m))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('motoristas').update({ status }).eq('id', id).then(() => {});
+    }
   };
 
   const handleUpdateMotorista = (updatedMot: Motorista) => {
     setMotoristas((prev) =>
       prev.map((m) => (m.id === updatedMot.id ? updatedMot : m))
     );
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('motoristas').update({
+        nome: updatedMot.nome,
+        cpf: updatedMot.cpf,
+        status: updatedMot.status,
+        cnh: updatedMot.cnh,
+        categoria_cnh: updatedMot.categoriaCnh,
+        validade_cnh: updatedMot.validadeCnh,
+        validade_mopp: updatedMot.validadeMopp,
+        validade_toxico: updatedMot.validadeToxico,
+        veiculo_fixo_placa: updatedMot.veiculoFixoPlaca || null,
+      }).eq('id', updatedMot.id).then(() => {});
+    }
   };
 
   const handleDeleteMotorista = (id: string) => {
     setMotoristas((prev) => prev.filter((m) => m.id !== id));
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('motoristas').delete().eq('id', id).then(() => {});
+    }
   };
 
   // Handlers: Manutenções
@@ -1297,7 +1695,14 @@ export const App: React.FC = () => {
       <SupabaseAuthModal
         isOpen={isSupabaseModalOpen}
         onClose={() => setIsSupabaseModalOpen(false)}
-        onConnectionChange={(connected) => setIsSupabaseConnected(connected)}
+        onConnectionChange={(connected) => {
+          setIsSupabaseConnected(connected);
+          if (connected) {
+            syncWithSupabase();
+          }
+        }}
+        onUploadCompletoSupabase={handleUploadCompletoSupabase}
+        onSyncFromSupabase={syncWithSupabase}
       />
 
       {/* Modal Operacional de QR Code dos Caminhões (Adesivo de Cabine) */}
