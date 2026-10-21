@@ -12,6 +12,7 @@ import {
   Sparkles,
   BookOpen,
   HardDrive,
+  Tv,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -27,6 +28,7 @@ interface NavbarProps {
   onOpenBuscaGlobal?: () => void;
   onOpenBackupModal?: () => void;
   onOpenManualPopModal?: () => void;
+  onOpenTorreTv?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBuscaGlobal,
   onOpenBackupModal,
   onOpenManualPopModal,
+  onOpenTorreTv,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-3 sm:px-4 lg:px-8 flex items-center justify-between gap-2">
@@ -85,6 +88,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right User & Actions */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Modo Torre TV / Telão CCO */}
+        {onOpenTorreTv && (
+          <button
+            type="button"
+            onClick={onOpenTorreTv}
+            title="Abrir Painel Telão da Torre de Controle (Modo TV / CCO em Tela Cheia para Sala de Operações)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 transition active:scale-[0.98] border border-emerald-400/40"
+          >
+            <Tv className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Torre TV</span>
+            <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-200 text-[9px] font-black uppercase">
+              Ao Vivo
+            </span>
+          </button>
+        )}
+
         {/* Radar SASSMAQ */}
         {onOpenRadarSassmaq && (
           <button

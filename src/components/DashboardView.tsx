@@ -16,6 +16,7 @@ import {
   QrCode,
   Users,
   Sparkles,
+  Tv,
 } from 'lucide-react';
 import { formatNumber, formatCurrency, getStatusColor } from '../utils/formatters';
 import { calculateEsgMetrics } from '../utils/esgCalculator';
@@ -40,6 +41,7 @@ interface DashboardViewProps {
   motoristas?: Motorista[];
   onNavigateToTab: (tab: any) => void;
   onOpenQrCode?: () => void;
+  onOpenTorreTv?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -50,6 +52,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   motoristas = [],
   onNavigateToTab,
   onOpenQrCode,
+  onOpenTorreTv,
 }) => {
   // Calculations
   const totalViagens = viagens.length;
@@ -122,6 +125,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+            {onOpenTorreTv && (
+              <button
+                type="button"
+                onClick={onOpenTorreTv}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-[0.98] border border-emerald-400/30"
+              >
+                <Tv className="w-4 h-4 text-emerald-200" />
+                <span>Modo Telão (Torre TV)</span>
+              </button>
+            )}
             <button
               onClick={() => onNavigateToTab('viagens')}
               className="px-4 py-2.5 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-ambipar-500/25 transition"

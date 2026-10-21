@@ -83,6 +83,7 @@ import { ModalRadarSassmaq } from './components/ModalRadarSassmaq';
 import { ModalBuscaGlobal } from './components/ModalBuscaGlobal';
 import { ModalBackupDados, BackupDataStructure } from './components/ModalBackupDados';
 import { ModalManualPopAmbipar } from './components/ModalManualPopAmbipar';
+import { ModalTorreTv } from './components/ModalTorreTv';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -96,6 +97,7 @@ export const App: React.FC = () => {
   const [isBuscaGlobalOpen, setIsBuscaGlobalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isManualPopModalOpen, setIsManualPopModalOpen] = useState(false);
+  const [isTorreTvOpen, setIsTorreTvOpen] = useState(false);
 
   const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1046,6 +1048,7 @@ export const App: React.FC = () => {
         onOpenBuscaGlobal={() => setIsBuscaGlobalOpen(true)}
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
         onOpenManualPopModal={() => setIsManualPopModalOpen(true)}
+        onOpenTorreTv={() => setIsTorreTvOpen(true)}
       />
 
       {/* Main Container */}
@@ -1077,6 +1080,7 @@ export const App: React.FC = () => {
                 setQrCodePlacaSelecionada(undefined);
                 setIsQrCodeModalOpen(true);
               }}
+              onOpenTorreTv={() => setIsTorreTvOpen(true)}
             />
           )}
 
@@ -1328,6 +1332,19 @@ export const App: React.FC = () => {
       <ModalManualPopAmbipar
         isOpen={isManualPopModalOpen}
         onClose={() => setIsManualPopModalOpen(false)}
+      />
+
+      {/* Modal Torre TV (Painel Telão CCO / Fullscreen) */}
+      <ModalTorreTv
+        isOpen={isTorreTvOpen}
+        onClose={() => setIsTorreTvOpen(false)}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        viagens={viagens}
+        checklists={checklists}
+        manutencoes={manutencoes}
+        mtrs={mtrs}
+        ocorrencias={ocorrencias}
       />
     </div>
   );
