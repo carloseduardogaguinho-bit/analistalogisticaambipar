@@ -16,9 +16,13 @@ import {
   FileCheck,
   AlertCircle,
   Download,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatNumber, formatCurrency, getStatusColor, formatDateTime } from '../utils/formatters';
 import { getCombustivelColor } from '../utils/esgCalculator';
+import { ModalFichaEmergenciaNbr7503 } from './ModalFichaEmergenciaNbr7503';
+import { ModalLiberacaoPgrSm } from './ModalLiberacaoPgrSm';
 
 interface ViagensViewProps {
   viagens: Viagem[];
@@ -64,6 +68,8 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedViagem, setSelectedViagem] = useState<Viagem | null>(null);
+  const [fichaEmergenciaViagem, setFichaEmergenciaViagem] = useState<Viagem | null>(null);
+  const [liberacaoPgrViagem, setLiberacaoPgrViagem] = useState<Viagem | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Viagem>>({
@@ -381,6 +387,22 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
+                            onClick={() => setFichaEmergenciaViagem(v)}
+                            title="Ficha de Emergência NBR 7503 & Envelope de Transporte (Res. ANTT 5998)"
+                            className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 transition flex items-center gap-1 font-bold text-[10px]"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">NBR 7503</span>
+                          </button>
+                          <button
+                            onClick={() => setLiberacaoPgrViagem(v)}
+                            title="Checklist de Liberação SM & PGR (Buonny / Pamcary / Sensores)"
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 transition flex items-center gap-1 font-bold text-[10px]"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">SM / PGR</span>
+                          </button>
+                          <button
                             onClick={() => setSelectedViagem(v)}
                             title="Ver Ficha Completa da Viagem"
                             className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
@@ -680,7 +702,26 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex justify-end">
+            <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFichaEmergenciaViagem(selectedViagem)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 font-bold border border-amber-500/40 flex items-center gap-1.5 transition text-xs"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Ficha NBR 7503</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLiberacaoPgrViagem(selectedViagem)}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold border border-emerald-500/40 flex items-center gap-1.5 transition text-xs"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Liberação SM &amp; PGR</span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setSelectedViagem(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 transition"
@@ -691,6 +732,20 @@ export const ViagensView: React.FC<ViagensViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal: Ficha de Emergência NBR 7503 & Envelope de Transporte */}
+      <ModalFichaEmergenciaNbr7503
+        isOpen={!!fichaEmergenciaViagem}
+        onClose={() => setFichaEmergenciaViagem(null)}
+        viagem={fichaEmergenciaViagem}
+      />
+
+      {/* Modal: Checklist de Liberação de SM & Gerenciamento de Risco (PGR) */}
+      <ModalLiberacaoPgrSm
+        isOpen={!!liberacaoPgrViagem}
+        onClose={() => setLiberacaoPgrViagem(null)}
+        viagem={liberacaoPgrViagem}
+      />
     </div>
   );
 };

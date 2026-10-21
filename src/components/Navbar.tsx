@@ -13,6 +13,7 @@ import {
   BookOpen,
   HardDrive,
   Tv,
+  ClipboardList,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -29,6 +30,7 @@ interface NavbarProps {
   onOpenBackupModal?: () => void;
   onOpenManualPopModal?: () => void;
   onOpenTorreTv?: () => void;
+  onOpenPassagemPlantao?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -44,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBackupModal,
   onOpenManualPopModal,
   onOpenTorreTv,
+  onOpenPassagemPlantao,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-3 sm:px-4 lg:px-8 flex items-center justify-between gap-2">
@@ -101,6 +104,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-200 text-[9px] font-black uppercase">
               Ao Vivo
             </span>
+          </button>
+        )}
+
+        {/* Passagem de Plantão & Fechamento de Turno */}
+        {onOpenPassagemPlantao && (
+          <button
+            type="button"
+            onClick={onOpenPassagemPlantao}
+            title="Passagem de Plantão &amp; Fechamento de Turno (Ata Executiva do Analista com status de viagens e pendências)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition shadow-sm"
+          >
+            <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden lg:inline">Passagem Plantão</span>
           </button>
         )}
 

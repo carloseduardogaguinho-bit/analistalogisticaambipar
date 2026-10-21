@@ -89,6 +89,7 @@ import { ModalBuscaGlobal } from './components/ModalBuscaGlobal';
 import { ModalBackupDados, BackupDataStructure } from './components/ModalBackupDados';
 import { ModalManualPopAmbipar } from './components/ModalManualPopAmbipar';
 import { ModalTorreTv } from './components/ModalTorreTv';
+import { ModalPassagemPlantao } from './components/ModalPassagemPlantao';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -103,6 +104,7 @@ export const App: React.FC = () => {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isManualPopModalOpen, setIsManualPopModalOpen] = useState(false);
   const [isTorreTvOpen, setIsTorreTvOpen] = useState(false);
+  const [isPassagemPlantaoOpen, setIsPassagemPlantaoOpen] = useState(false);
 
   const [isPortalMotorista, setIsPortalMotorista] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1471,6 +1473,7 @@ export const App: React.FC = () => {
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
         onOpenManualPopModal={() => setIsManualPopModalOpen(true)}
         onOpenTorreTv={() => setIsTorreTvOpen(true)}
+        onOpenPassagemPlantao={() => setIsPassagemPlantaoOpen(true)}
       />
 
       {/* Main Container */}
@@ -1787,6 +1790,18 @@ export const App: React.FC = () => {
         manutencoes={manutencoes}
         mtrs={mtrs}
         ocorrencias={ocorrencias}
+      />
+
+      {/* Modal Passagem de Plantão & Fechamento de Turno */}
+      <ModalPassagemPlantao
+        isOpen={isPassagemPlantaoOpen}
+        onClose={() => setIsPassagemPlantaoOpen(false)}
+        viagens={viagens}
+        veiculos={veiculos}
+        motoristas={motoristas}
+        manutencoes={manutencoes}
+        ocorrencias={ocorrencias}
+        mtrs={mtrs}
       />
     </div>
   );

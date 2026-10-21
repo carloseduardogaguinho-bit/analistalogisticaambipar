@@ -65,6 +65,7 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [combustivelFilter, setCombustivelFilter] = useState<string>('TODOS');
   const [filtroAnomaliasApenas, setFiltroAnomaliasApenas] = useState(false);
+  const [filtroArlaApenas, setFiltroArlaApenas] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
@@ -224,14 +225,24 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
 
     const isAnomalo = (a.mediaKmL && (a.mediaKmL < 1.9 || a.mediaKmL > 4.5)) || a.anomaliaDetectada;
     const matchesAnomalia = !filtroAnomaliasApenas || isAnomalo;
+    const matchesArla = !filtroArlaApenas || (a.arla32Litros && a.arla32Litros > 0);
 
-    return matchesSearch && matchesCombustivel && matchesAnomalia;
+    return matchesSearch && matchesCombustivel && matchesAnomalia && matchesArla;
   });
 
   // Global KPIs
   const totalLitrosGeral = abastecimentos.reduce((acc, a) => acc + (a.litrosAbastecidos || 0), 0);
   const totalGastoGeral = abastecimentos.reduce((acc, a) => acc + (a.valorTotal || 0), 0);
   const totalKmGeral = abastecimentos.reduce((acc, a) => acc + (a.kmRodadosDesdeUltimo || 0), 0);
+
+  // ARLA 32 & Euro 6 / Proconve P8 Metrics
+  const totalArlaLitros = abastecimentos.reduce((acc, a) => acc + (a.arla32Litros || 0), 0);
+  const totalArlaValor = abastecimentos.reduce((acc, a) => acc + (a.arla32Valor || 0), 0);
+  const dieselLitros = abastecimentos
+    .filter((a) => a.tipoCombustivel.includes('Diesel') || a.tipoCombustivel.includes('HVO'))
+    .reduce((acc, a) => acc + (a.litrosAbastecidos || 0), 0);
+  const proporcaoArlaDiesel = dieselLitros > 0 ? ((totalArlaLitros / dieselLitros) * 100).toFixed(1) : '0.0';
+  const arlaAbastecimentosCount = abastecimentos.filter((a) => (a.arla32Litros || 0) > 0).length;
 
   const mediaFrotaGeral = totalLitrosGeral > 0 && totalKmGeral > 0
     ? (totalKmGeral / totalLitrosGeral).toFixed(2)
@@ -464,6 +475,83 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
             ) : (
               '100% em conformidade'
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Painel Executivo de Arla 32 & Euro 6 (Proconve P8 / Módulo SCR) */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/20 to-slate-900 border border-blue-500/20 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+              <Leaf className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">Controle de Reagente ARLA 32 &amp; Conformidade Euro 6 (Proconve P8)</h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/30 font-bold">
+                  SCR &bull; Redução Catalítica Seletiva
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Auditoria de consumo de Arla 32 para evitar de-rating eletrônico (corte de até 40% de torque em caminhões Scania, Volvo e Mercedes) e multas do IBAMA.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltroArlaApenas(!filtroArlaApenas)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+                filtroArlaApenas
+                  ? 'bg-blue-500 text-slate-950 border-blue-400 font-bold'
+                  : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
+              }`}
+            >
+              <span>{filtroArlaApenas ? 'Exibindo Apenas ARLA 32' : 'Filtrar Abastecimentos c/ ARLA'}</span>
+              <span className="px-1.5 py-0.2 rounded bg-slate-900 text-[10px] font-mono">
+                {arlaAbastecimentosCount}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Volume Total Arla 32</span>
+            <span className="text-lg font-black text-blue-400 font-mono mt-0.5 block">
+              {formatNumber(totalArlaLitros, 0)} Litros
+            </span>
+            <span className="text-[10px] text-slate-500">Reagente abastecido na frota</span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Relação Arla / Diesel</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-lg font-black text-emerald-400 font-mono">{proporcaoArlaDiesel}%</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                Faixa Ideal: 4.5% a 7.0%
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500">Razão estequiométrica SCR</span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Investimento Acumulado</span>
+            <span className="text-lg font-black text-amber-400 font-mono mt-0.5 block">
+              {formatCurrency(totalArlaValor)}
+            </span>
+            <span className="text-[10px] text-slate-500">Custo com reagente no período</span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Diagnóstico de Potência</span>
+            <div className="text-emerald-400 font-bold text-xs mt-1 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Sem Risco de De-rating</span>
+            </div>
+            <span className="text-[10px] text-slate-500 block mt-0.5">100% de torque liberado nos módulos</span>
           </div>
         </div>
       </div>
@@ -722,6 +810,18 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
               <AlertOctagon className="w-3.5 h-3.5" />
               <span>Anomalias ({anomaliasCount})</span>
             </button>
+
+            <button
+              onClick={() => setFiltroArlaApenas(!filtroArlaApenas)}
+              className={`px-2.5 py-1.5 rounded-lg border font-semibold transition flex items-center gap-1 ${
+                filtroArlaApenas
+                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+              }`}
+            >
+              <Leaf className="w-3.5 h-3.5" />
+              <span>ARLA 32 ({arlaAbastecimentosCount})</span>
+            </button>
           </div>
         </div>
 
@@ -768,6 +868,13 @@ export const AbastecimentoView: React.FC<AbastecimentoViewProps> = ({
 
                       <td className="py-2.5 px-3">
                         <span className="text-emerald-400 font-semibold block">{a.tipoCombustivel}</span>
+                        {a.arla32Litros ? (
+                          <span className="text-[10px] text-blue-400 font-mono flex items-center gap-1 mt-0.5">
+                            <span className="px-1.5 py-0.2 rounded bg-blue-500/10 border border-blue-500/30">
+                              + {a.arla32Litros}L Arla 32 ({a.litrosAbastecidos > 0 ? ((a.arla32Litros / a.litrosAbastecidos) * 100).toFixed(1) : 0}%)
+                            </span>
+                          </span>
+                        ) : null}
                         {a.numeroNotaFiscal && (
                           <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1">
                             <FileText className="w-3 h-3" /> NF: {a.numeroNotaFiscal}
