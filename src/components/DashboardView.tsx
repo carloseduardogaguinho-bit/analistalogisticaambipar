@@ -1,5 +1,5 @@
 import React from 'react';
-import { Viagem, DocumentoAmbiental, Ocorrencia } from '../types';
+import { Viagem, DocumentoAmbiental, Ocorrencia, Veiculo, Motorista } from '../types';
 import {
   Truck,
   Scale,
@@ -12,6 +12,10 @@ import {
   ChevronRight,
   TrendingUp,
   MapPin,
+  CheckCircle2,
+  QrCode,
+  Users,
+  Sparkles,
 } from 'lucide-react';
 import { formatNumber, formatCurrency, getStatusColor } from '../utils/formatters';
 import { calculateEsgMetrics } from '../utils/esgCalculator';
@@ -32,14 +36,20 @@ interface DashboardViewProps {
   viagens: Viagem[];
   mtrs: DocumentoAmbiental[];
   ocorrencias: Ocorrencia[];
+  veiculos?: Veiculo[];
+  motoristas?: Motorista[];
   onNavigateToTab: (tab: any) => void;
+  onOpenQrCode?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   viagens,
   mtrs,
   ocorrencias,
+  veiculos = [],
+  motoristas = [],
   onNavigateToTab,
+  onOpenQrCode,
 }) => {
   // Calculations
   const totalViagens = viagens.length;
@@ -129,6 +139,185 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Guia de Ativação / Onboarding da Unidade (quando a base está sendo implantada) */}
+      {(totalViagens === 0 || veiculos.length === 0 || motoristas.length === 0) && (
+        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-ambipar-400 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-ambipar-400" />
+                <span>Primeiros Passos &middot; Implantação da Operação Ambipar</span>
+              </div>
+              <h3 className="text-base font-extrabold text-white mt-1">
+                Checklist de Ativação da Frota e Despacho
+              </h3>
+              <p className="text-xs text-slate-400">
+                Siga este roteiro para colocar a operação da sua unidade rodando com conformidade total SASSMAQ.
+              </p>
+            </div>
+
+            {/* Barra de Progresso da Implantação */}
+            <div className="flex items-center gap-3 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800 shrink-0">
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Progresso</span>
+                <span className="text-xs font-black text-emerald-400">
+                  {((veiculos.length > 0 ? 1 : 0) + (motoristas.length > 0 ? 1 : 0) + (viagens.length > 0 ? 1 : 0) + (mtrs.length > 0 ? 1 : 0))} de 4 etapas
+                </span>
+              </div>
+              <div className="w-20 bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${(((veiculos.length > 0 ? 1 : 0) + (motoristas.length > 0 ? 1 : 0) + (viagens.length > 0 ? 1 : 0) + (mtrs.length > 0 ? 1 : 0)) / 4) * 100}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Etapa 1: Veículos */}
+            <div
+              className={`p-4 rounded-xl border transition flex flex-col justify-between space-y-3 ${
+                veiculos.length > 0
+                  ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-300'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-bold">1. Cadastrar Frota</span>
+                  {veiculos.length > 0 ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Truck className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {veiculos.length > 0
+                    ? `${veiculos.length} veículo(s) cadastrado(s) na frota.`
+                    : 'Importe o CRLV Digital ou cadastre caminhões e implementos.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('frota')}
+                className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  veiculos.length > 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 shadow-sm'
+                }`}
+              >
+                <span>{veiculos.length > 0 ? 'Ver Frota' : 'Cadastrar Frota'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Etapa 2: Motoristas */}
+            <div
+              className={`p-4 rounded-xl border transition flex flex-col justify-between space-y-3 ${
+                motoristas.length > 0
+                  ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-300'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-bold">2. Motoristas &amp; Ajudantes</span>
+                  {motoristas.length > 0 ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Users className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {motoristas.length > 0
+                    ? `${motoristas.length} condutor(es) cadastrado(s).`
+                    : 'Registre titulares, segundo motorista e ajudantes com CNH/MOPP.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('motoristas')}
+                className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  motoristas.length > 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-white'
+                }`}
+              >
+                <span>{motoristas.length > 0 ? 'Ver Motoristas' : 'Cadastrar Equipe'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Etapa 3: QR Code Cabine */}
+            <div className="p-4 rounded-xl border bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700 transition flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-bold">3. QR Code de Cabine</span>
+                  <QrCode className="w-4 h-4 text-cyan-400" />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Gere a plaqueta adesiva de para-brisa para os motoristas fazerem checklist no celular.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenQrCode) onOpenQrCode();
+                  else onNavigateToTab('checklist');
+                }}
+                className="w-full py-1.5 px-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <span>Gerar Plaqueta</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Etapa 4: Viagens */}
+            <div
+              className={`p-4 rounded-xl border transition flex flex-col justify-between space-y-3 ${
+                viagens.length > 0
+                  ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-300'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-bold">4. Viagens &amp; Escalas</span>
+                  {viagens.length > 0 ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Truck className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {viagens.length > 0
+                    ? `${viagens.length} viagem(ns) em andamento.`
+                    : 'Programe rotas, clientes químicos e gere MTRs de transporte.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigateToTab('viagens')}
+                className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  viagens.length > 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-800 hover:bg-slate-700 text-white'
+                }`}
+              >
+                <span>{viagens.length > 0 ? 'Ver Viagens' : 'Programar Viagem'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

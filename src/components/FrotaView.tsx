@@ -772,21 +772,42 @@ export const FrotaView: React.FC<FrotaViewProps> = ({
 
       {/* Main Content Area */}
       {filtered.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-          <Truck className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-white">Nenhum veículo encontrado na frota</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            {searchTerm || filterStatus !== 'TODOS'
-              ? 'Nenhum caminhão atende aos critérios de pesquisa ou filtros selecionados.'
-              : 'Cadastre os cavalos mecânicos, carretas tanques inox, roll-on e poliguindastes para iniciar a gestão de frota.'}
-          </p>
-          <button
-            onClick={handleOpenCreateModal}
-            className="px-4 py-2 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-bold text-xs inline-flex items-center gap-2 mt-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Cadastrar Veículo</span>
-          </button>
+        <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 space-y-4 max-w-2xl mx-auto shadow-sm my-6">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-ambipar-500/20 to-emerald-500/20 border border-ambipar-500/30 flex items-center justify-center mx-auto text-ambipar-400">
+            <Truck className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">
+              {searchTerm || filterStatus !== 'TODOS'
+                ? 'Nenhum veículo encontrado com os filtros aplicados'
+                : 'Prontuário de Frota Limpo &middot; Pronto para Operação'}
+            </h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
+              {searchTerm || filterStatus !== 'TODOS'
+                ? 'Tente ajustar os termos de pesquisa ou remover os filtros de categoria/status.'
+                : 'Cadastre os cavalos mecânicos, caminhões rígidos (truck/bitruck), VUCs e implementos da sua unidade. Você pode importar diretamente o arquivo do CRLV Digital para preenchimento em 2 segundos.'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsCrlvModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-ambipar-500 hover:from-emerald-400 hover:to-ambipar-400 text-slate-950 font-black text-xs inline-flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95"
+            >
+              <FileCheck className="w-4 h-4" />
+              <span>Importar CRLV Digital (PDF / Imagem)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs inline-flex items-center gap-2 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Cadastrar Manualmente</span>
+            </button>
+          </div>
         </div>
       ) : viewMode === 'cards' ? (
         /* Grid of Vehicle Cards */

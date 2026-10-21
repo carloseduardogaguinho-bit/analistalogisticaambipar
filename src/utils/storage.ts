@@ -15,57 +15,59 @@ import {
   CotacaoManutencao,
   CertificadoDestinacaoFinalCDF,
 } from '../types';
-import {
-  INITIAL_VIAGENS,
-  INITIAL_MTRS,
-  INITIAL_LICENCAS,
-  INITIAL_OCORRENCIAS,
-  INITIAL_VEICULOS,
-  INITIAL_MOTORISTAS,
-  INITIAL_MANUTENCOES,
-  INITIAL_CHECKLISTS,
-  INITIAL_ABASTECIMENTOS,
-  INITIAL_CDFS,
-} from '../data/mockData';
-import {
-  INITIAL_CTES,
-  INITIAL_MDFES,
-  INITIAL_EMPRESA_FISCAL,
-} from '../data/fiscalData';
+import { INITIAL_EMPRESA_FISCAL } from '../data/fiscalData';
 
 const KEYS = {
-  VIAGENS: 'ambipar_logistica_viagens_v2',
-  MTRS: 'ambipar_logistica_mtrs_v2',
-  LICENCAS: 'ambipar_logistica_licencas_v2',
-  OCORRENCIAS: 'ambipar_logistica_ocorrencias_v2',
-  VEICULOS: 'ambipar_logistica_veiculos_v2',
-  MOTORISTAS: 'ambipar_logistica_motoristas_v2',
-  MANUTENCOES: 'ambipar_logistica_manutencoes_v2',
-  CHECKLISTS: 'ambipar_logistica_checklists_v2',
-  ABASTECIMENTOS: 'ambipar_logistica_abastecimentos_v2',
-  CTES: 'ambipar_logistica_ctes_v2',
-  MDFES: 'ambipar_logistica_mdfes_v2',
-  EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v2',
-  MEDICOES: 'ambipar_logistica_medicoes_v2',
-  COTACOES: 'ambipar_logistica_cotacoes_v2',
-  CDFS: 'ambipar_logistica_cdfs_v2',
+  VIAGENS: 'ambipar_logistica_viagens_v3',
+  MTRS: 'ambipar_logistica_mtrs_v3',
+  LICENCAS: 'ambipar_logistica_licencas_v3',
+  OCORRENCIAS: 'ambipar_logistica_ocorrencias_v3',
+  VEICULOS: 'ambipar_logistica_veiculos_v3',
+  MOTORISTAS: 'ambipar_logistica_motoristas_v3',
+  MANUTENCOES: 'ambipar_logistica_manutencoes_v3',
+  CHECKLISTS: 'ambipar_logistica_checklists_v3',
+  ABASTECIMENTOS: 'ambipar_logistica_abastecimentos_v3',
+  CTES: 'ambipar_logistica_ctes_v3',
+  MDFES: 'ambipar_logistica_mdfes_v3',
+  EMPRESA_FISCAL: 'ambipar_logistica_empresa_fiscal_v3',
+  MEDICOES: 'ambipar_logistica_medicoes_v3',
+  COTACOES: 'ambipar_logistica_cotacoes_v3',
+  CDFS: 'ambipar_logistica_cdfs_v3',
 };
 
-// Limpa automaticamente dados de versões anteriores com dados fictícios
+// Limpa automaticamente qualquer dado demo ou resíduo de versões anteriores (v1 e v2)
 try {
   const legacyKeys = [
     'ambipar_logistica_viagens_v1',
+    'ambipar_logistica_viagens_v2',
     'ambipar_logistica_mtrs_v1',
+    'ambipar_logistica_mtrs_v2',
     'ambipar_logistica_licencas_v1',
+    'ambipar_logistica_licencas_v2',
     'ambipar_logistica_ocorrencias_v1',
+    'ambipar_logistica_ocorrencias_v2',
     'ambipar_logistica_veiculos_v1',
+    'ambipar_logistica_veiculos_v2',
     'ambipar_logistica_motoristas_v1',
+    'ambipar_logistica_motoristas_v2',
     'ambipar_logistica_manutencoes_v1',
+    'ambipar_logistica_manutencoes_v2',
     'ambipar_logistica_checklists_v1',
+    'ambipar_logistica_checklists_v2',
     'ambipar_logistica_abastecimentos_v1',
+    'ambipar_logistica_abastecimentos_v2',
     'ambipar_logistica_ctes_v1',
+    'ambipar_logistica_ctes_v2',
     'ambipar_logistica_mdfes_v1',
+    'ambipar_logistica_mdfes_v2',
     'ambipar_logistica_empresa_fiscal_v1',
+    'ambipar_logistica_empresa_fiscal_v2',
+    'ambipar_logistica_medicoes_v1',
+    'ambipar_logistica_medicoes_v2',
+    'ambipar_logistica_cotacoes_v1',
+    'ambipar_logistica_cotacoes_v2',
+    'ambipar_logistica_cdfs_v1',
+    'ambipar_logistica_cdfs_v2',
   ];
   legacyKeys.forEach((key) => localStorage.removeItem(key));
 } catch {
@@ -77,124 +79,91 @@ export const clearAllStoredData = () => {
   window.location.reload();
 };
 
-// Viagens
+// Viagens (Inicia 100% limpo)
 export const getStoredViagens = (): Viagem[] => {
   const data = localStorage.getItem(KEYS.VIAGENS);
-  if (!data) {
-    localStorage.setItem(KEYS.VIAGENS, JSON.stringify(INITIAL_VIAGENS));
-    return INITIAL_VIAGENS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_VIAGENS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredViagens = (data: Viagem[]) => localStorage.setItem(KEYS.VIAGENS, JSON.stringify(data));
 
-// MTRs
+// MTRs (Inicia 100% limpo)
 export const getStoredMTRs = (): DocumentoAmbiental[] => {
   const data = localStorage.getItem(KEYS.MTRS);
-  if (!data) {
-    localStorage.setItem(KEYS.MTRS, JSON.stringify(INITIAL_MTRS));
-    return INITIAL_MTRS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_MTRS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredMTRs = (data: DocumentoAmbiental[]) => localStorage.setItem(KEYS.MTRS, JSON.stringify(data));
 
-// Licencas
+// Licencas (Inicia 100% limpo)
 export const getStoredLicencas = (): LicencaVeiculo[] => {
   const data = localStorage.getItem(KEYS.LICENCAS);
-  if (!data) {
-    localStorage.setItem(KEYS.LICENCAS, JSON.stringify(INITIAL_LICENCAS));
-    return INITIAL_LICENCAS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_LICENCAS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredLicencas = (data: LicencaVeiculo[]) => localStorage.setItem(KEYS.LICENCAS, JSON.stringify(data));
 
-// Ocorrencias
+// Ocorrencias (Inicia 100% limpo)
 export const getStoredOcorrencias = (): Ocorrencia[] => {
   const data = localStorage.getItem(KEYS.OCORRENCIAS);
-  if (!data) {
-    localStorage.setItem(KEYS.OCORRENCIAS, JSON.stringify(INITIAL_OCORRENCIAS));
-    return INITIAL_OCORRENCIAS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_OCORRENCIAS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredOcorrencias = (data: Ocorrencia[]) => localStorage.setItem(KEYS.OCORRENCIAS, JSON.stringify(data));
 
-// Veiculos
+// Veiculos da Frota (Inicia 100% limpo)
 export const getStoredVeiculos = (): Veiculo[] => {
   const data = localStorage.getItem(KEYS.VEICULOS);
-  if (!data) {
-    localStorage.setItem(KEYS.VEICULOS, JSON.stringify(INITIAL_VEICULOS));
-    return INITIAL_VEICULOS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_VEICULOS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredVeiculos = (data: Veiculo[]) => localStorage.setItem(KEYS.VEICULOS, JSON.stringify(data));
 
-// Motoristas
+// Motoristas e Tripulantes (Inicia 100% limpo)
 export const getStoredMotoristas = (): Motorista[] => {
   const data = localStorage.getItem(KEYS.MOTORISTAS);
-  if (!data) {
-    localStorage.setItem(KEYS.MOTORISTAS, JSON.stringify(INITIAL_MOTORISTAS));
-    return INITIAL_MOTORISTAS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_MOTORISTAS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredMotoristas = (data: Motorista[]) => localStorage.setItem(KEYS.MOTORISTAS, JSON.stringify(data));
 
-// Manutencoes
+// Manutencoes (Inicia 100% limpo)
 export const getStoredManutencoes = (): Manutencao[] => {
   const data = localStorage.getItem(KEYS.MANUTENCOES);
-  if (!data) {
-    localStorage.setItem(KEYS.MANUTENCOES, JSON.stringify(INITIAL_MANUTENCOES));
-    return INITIAL_MANUTENCOES;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_MANUTENCOES; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredManutencoes = (data: Manutencao[]) => localStorage.setItem(KEYS.MANUTENCOES, JSON.stringify(data));
 
-// Checklists
+// Checklists Diarios (Inicia 100% limpo)
 export const getStoredChecklists = (): ChecklistDiario[] => {
   const data = localStorage.getItem(KEYS.CHECKLISTS);
-  if (!data) {
-    localStorage.setItem(KEYS.CHECKLISTS, JSON.stringify(INITIAL_CHECKLISTS));
-    return INITIAL_CHECKLISTS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_CHECKLISTS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredChecklists = (data: ChecklistDiario[]) => localStorage.setItem(KEYS.CHECKLISTS, JSON.stringify(data));
 
-// Abastecimentos
+// Abastecimentos (Inicia 100% limpo)
 export const getStoredAbastecimentos = (): Abastecimento[] => {
   const data = localStorage.getItem(KEYS.ABASTECIMENTOS);
-  if (!data) {
-    localStorage.setItem(KEYS.ABASTECIMENTOS, JSON.stringify(INITIAL_ABASTECIMENTOS));
-    return INITIAL_ABASTECIMENTOS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_ABASTECIMENTOS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredAbastecimentos = (data: Abastecimento[]) => localStorage.setItem(KEYS.ABASTECIMENTOS, JSON.stringify(data));
 
-// CT-es
+// CT-es (Inicia 100% limpo)
 export const getStoredCtes = (): CteDocumento[] => {
   const data = localStorage.getItem(KEYS.CTES);
-  if (!data) {
-    localStorage.setItem(KEYS.CTES, JSON.stringify(INITIAL_CTES));
-    return INITIAL_CTES;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_CTES; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredCtes = (data: CteDocumento[]) => localStorage.setItem(KEYS.CTES, JSON.stringify(data));
 
-// MDF-es
+// MDF-es (Inicia 100% limpo)
 export const getStoredMdfes = (): MdfeDocumento[] => {
   const data = localStorage.getItem(KEYS.MDFES);
-  if (!data) {
-    localStorage.setItem(KEYS.MDFES, JSON.stringify(INITIAL_MDFES));
-    return INITIAL_MDFES;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_MDFES; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredMdfes = (data: MdfeDocumento[]) => localStorage.setItem(KEYS.MDFES, JSON.stringify(data));
 
@@ -209,7 +178,7 @@ export const getStoredEmpresaFiscal = (): EmpresaFiscalConfig => {
 };
 export const saveStoredEmpresaFiscal = (data: EmpresaFiscalConfig) => localStorage.setItem(KEYS.EMPRESA_FISCAL, JSON.stringify(data));
 
-// Medições de Clientes e Fornecedores
+// Medições de Clientes e Fornecedores (Inicia 100% limpo)
 export const getStoredMedicoes = (): MedicaoContrato[] => {
   const data = localStorage.getItem(KEYS.MEDICOES);
   if (!data) return [];
@@ -217,7 +186,7 @@ export const getStoredMedicoes = (): MedicaoContrato[] => {
 };
 export const saveStoredMedicoes = (data: MedicaoContrato[]) => localStorage.setItem(KEYS.MEDICOES, JSON.stringify(data));
 
-// Cotações de Oficinas
+// Cotações de Oficinas (Inicia 100% limpo)
 export const getStoredCotacoes = (): CotacaoManutencao[] => {
   const data = localStorage.getItem(KEYS.COTACOES);
   if (!data) return [];
@@ -225,13 +194,10 @@ export const getStoredCotacoes = (): CotacaoManutencao[] => {
 };
 export const saveStoredCotacoes = (data: CotacaoManutencao[]) => localStorage.setItem(KEYS.COTACOES, JSON.stringify(data));
 
-// Certificados de Destinação Final (CDF)
+// Certificados de Destinação Final (CDF) (Inicia 100% limpo)
 export const getStoredCdfs = (): CertificadoDestinacaoFinalCDF[] => {
   const data = localStorage.getItem(KEYS.CDFS);
-  if (!data) {
-    localStorage.setItem(KEYS.CDFS, JSON.stringify(INITIAL_CDFS));
-    return INITIAL_CDFS;
-  }
-  try { return JSON.parse(data); } catch { return INITIAL_CDFS; }
+  if (!data) return [];
+  try { return JSON.parse(data); } catch { return []; }
 };
 export const saveStoredCdfs = (data: CertificadoDestinacaoFinalCDF[]) => localStorage.setItem(KEYS.CDFS, JSON.stringify(data));

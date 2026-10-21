@@ -25,7 +25,6 @@ interface NavbarProps {
   onOpenQrCodeModal?: () => void;
   onOpenRadarSassmaq?: () => void;
   onOpenBuscaGlobal?: () => void;
-  onCarregarCenarioDemo?: () => void;
   onOpenBackupModal?: () => void;
   onOpenManualPopModal?: () => void;
 }
@@ -40,7 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQrCodeModal,
   onOpenRadarSassmaq,
   onOpenBuscaGlobal,
-  onCarregarCenarioDemo,
   onOpenBackupModal,
   onOpenManualPopModal,
 }) => {
@@ -115,19 +113,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <QrCode className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden xl:inline">QR Code Cabine</span>
-          </button>
-        )}
-
-        {/* Cenário Demonstração Ambipar */}
-        {onCarregarCenarioDemo && (
-          <button
-            type="button"
-            onClick={onCarregarCenarioDemo}
-            title="Carregar Cenário Operacional Ambipar com 1 clique (8 veículos, 6 motoristas/ajudantes, viagens, MTRs e cotações com saving)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-ambipar-500/20 to-emerald-500/20 hover:from-ambipar-500/30 hover:to-emerald-500/30 text-ambipar-300 border border-ambipar-500/40 text-xs font-extrabold transition shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-ambipar-400" />
-            <span className="hidden md:inline">Demo Ambipar</span>
           </button>
         )}
 
