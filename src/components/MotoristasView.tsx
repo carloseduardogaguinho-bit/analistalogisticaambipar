@@ -37,9 +37,108 @@ import {
   Building,
   UserCheck,
   Activity,
-  Car
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Share2,
+  Clock,
 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
+
+export type TipoStatusEscala = 'viagem' | 'patio' | 'dsr' | 'standby' | 'ferias';
+
+export const CONFIG_ESCALA: Record<
+  TipoStatusEscala,
+  { label: string; sigla: string; bg: string; text: string; border: string; dot: string; horas: number }
+> = {
+  viagem: {
+    label: 'Em Viagem',
+    sigla: 'VIAG',
+    bg: 'bg-blue-500/15 hover:bg-blue-500/25',
+    text: 'text-blue-300',
+    border: 'border-blue-500/40',
+    dot: 'bg-blue-400',
+    horas: 8,
+  },
+  patio: {
+    label: 'Pátio / Base',
+    sigla: 'PÁTIO',
+    bg: 'bg-emerald-500/15 hover:bg-emerald-500/25',
+    text: 'text-emerald-300',
+    border: 'border-emerald-500/40',
+    dot: 'bg-emerald-400',
+    horas: 8,
+  },
+  dsr: {
+    label: 'DSR (Descanso)',
+    sigla: 'DSR',
+    bg: 'bg-purple-500/20 hover:bg-purple-500/30',
+    text: 'text-purple-300',
+    border: 'border-purple-500/50',
+    dot: 'bg-purple-400',
+    horas: 0,
+  },
+  standby: {
+    label: 'Stand-by / Plantão',
+    sigla: 'PLANT',
+    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
+    text: 'text-amber-300',
+    border: 'border-amber-500/40',
+    dot: 'bg-amber-400',
+    horas: 4,
+  },
+  ferias: {
+    label: 'Férias / Afast.',
+    sigla: 'FÉRIAS',
+    bg: 'bg-slate-700/30 hover:bg-slate-700/50',
+    text: 'text-slate-400',
+    border: 'border-slate-700',
+    dot: 'bg-slate-500',
+    horas: 0,
+  },
+};
+
+export const PROXIMO_STATUS_ESCALA: Record<TipoStatusEscala, TipoStatusEscala> = {
+  viagem: 'patio',
+  patio: 'dsr',
+  dsr: 'standby',
+  standby: 'ferias',
+  ferias: 'viagem',
+};
+
+export const getDiasSemanaOffset = (offsetSemanas: number) => {
+  const hoje = new Date();
+  const hojeIso = hoje.toISOString().slice(0, 10);
+  const diaSemanaIndex = hoje.getDay();
+  const diffSegunda = hoje.getDate() - (diaSemanaIndex === 0 ? 6 : diaSemanaIndex - 1) + (offsetSemanas * 7);
+  const segunda = new Date(hoje.getFullYear(), hoje.getMonth(), diffSegunda);
+
+  const nomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const nomesCompletos = [
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo',
+  ];
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(segunda.getFullYear(), segunda.getMonth(), segunda.getDate() + i);
+    const diaIso = d.toISOString().slice(0, 10);
+    const diaMes = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return {
+      indice: i,
+      sigla: nomes[i],
+      nomeCompleto: nomesCompletos[i],
+      dataIso: diaIso,
+      diaMes,
+      isHoje: diaIso === hojeIso,
+    };
+  });
+};
 
 interface MotoristasViewProps {
   motoristas: Motorista[];
@@ -63,7 +162,64 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
   const [categoriaFilter, setCategoriaFilter] = useState<string>('TODAS');
   const [regimeFilter, setRegimeFilter] = useState<string>('TODOS');
   const [funcaoFilter, setFuncaoFilter] = useState<string>('TODAS');
-  const [viewMode, setViewMode] = useState<'grid' | 'tabela'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'tabela' | 'escala'>('grid');
+
+  // Estados da Escala Semanal & DSR (Lei 13.103/2015)
+  const [offsetSemana, setOffsetSemana] = useState(0);
+  const [escalaPorMotorista, setEscalaPorMotorista] = useState<Record<string, TipoStatusEscala[]>>(() => {
+    try {
+      const raw = localStorage.getItem('ambipar_escala_semanal_v3');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      console.error(e);
+    }
+    return {};
+  });
+
+  const handleSalvarEscala = (novaEscala: Record<string, TipoStatusEscala[]>) => {
+    setEscalaPorMotorista(novaEscala);
+    try {
+      localStorage.setItem('ambipar_escala_semanal_v3', JSON.stringify(novaEscala));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getEscalaMotorista = (motoristaId: string, indexPadrao = 0): TipoStatusEscala[] => {
+    const chave = `${motoristaId}_sem_${offsetSemana}`;
+    if (escalaPorMotorista[chave]) return escalaPorMotorista[chave];
+    const padroes: TipoStatusEscala[][] = [
+      ['viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr', 'dsr'],
+      ['viagem', 'viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr'],
+      ['patio', 'viagem', 'viagem', 'viagem', 'viagem', 'dsr', 'standby'],
+      ['standby', 'viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr'],
+    ];
+    return padroes[indexPadrao % padroes.length];
+  };
+
+  const handleAlternarDiaEscala = (motoristaId: string, diaIndice: number, indexPadrao: number) => {
+    const chave = `${motoristaId}_sem_${offsetSemana}`;
+    const atual = getEscalaMotorista(motoristaId, indexPadrao);
+    const novoStatus = PROXIMO_STATUS_ESCALA[atual[diaIndice]] || 'viagem';
+    const novaLista = [...atual];
+    novaLista[diaIndice] = novoStatus;
+    handleSalvarEscala({ ...escalaPorMotorista, [chave]: novaLista });
+  };
+
+  const handleAutoBalancearEscala = () => {
+    const nova: Record<string, TipoStatusEscala[]> = { ...escalaPorMotorista };
+    filtered.forEach((m, idx) => {
+      const chave = `${m.id}_sem_${offsetSemana}`;
+      const padroes: TipoStatusEscala[][] = [
+        ['viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr', 'dsr'],
+        ['viagem', 'viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr'],
+        ['patio', 'viagem', 'viagem', 'viagem', 'viagem', 'dsr', 'standby'],
+        ['standby', 'viagem', 'viagem', 'viagem', 'viagem', 'patio', 'dsr'],
+      ];
+      nova[chave] = padroes[idx % padroes.length];
+    });
+    handleSalvarEscala(nova);
+  };
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -546,6 +702,15 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
             >
               Tabela Auditoria
             </button>
+            <button
+              onClick={() => setViewMode('escala')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                viewMode === 'escala' ? 'bg-ambipar-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Escala &amp; DSR (Lei 13.103)</span>
+            </button>
           </div>
         </div>
       </div>
@@ -826,7 +991,7 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
             );
           })}
         </div>
-      ) : (
+      ) : viewMode === 'tabela' ? (
         /* Full Audit Compliance Table View */
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 overflow-x-auto shadow-sm">
           <table className="w-full text-left text-xs">
@@ -959,6 +1124,355 @@ export const MotoristasView: React.FC<MotoristasViewProps> = ({
             </tbody>
           </table>
         </div>
+      ) : (
+        /* Escala Semanal & DSR (Lei 13.103/2015) View */
+        (() => {
+          const diasSemana = getDiasSemanaOffset(offsetSemana);
+          const diaHojeIndex = diasSemana.findIndex((d) => d.isHoje);
+          const indiceDiaVerificar = diaHojeIndex !== -1 ? diaHojeIndex : 0;
+
+          let emViagemHoje = 0;
+          let emPatioHoje = 0;
+          let emDsrHoje = 0;
+          let emStandbyHoje = 0;
+          let conformesDsrCount = 0;
+
+          filtered.forEach((m, idx) => {
+            const esc = getEscalaMotorista(m.id, idx);
+            const statusHoje = esc[indiceDiaVerificar];
+            if (statusHoje === 'viagem') emViagemHoje++;
+            if (statusHoje === 'patio') emPatioHoje++;
+            if (statusHoje === 'dsr') emDsrHoje++;
+            if (statusHoje === 'standby') emStandbyHoje++;
+
+            const dsrCount = esc.filter((s) => s === 'dsr' || s === 'ferias').length;
+            if (dsrCount >= 1) conformesDsrCount++;
+          });
+
+          const percConformidade =
+            filtered.length > 0 ? Math.round((conformesDsrCount / filtered.length) * 100) : 100;
+
+          const handleCompartilharWhatsApp = () => {
+            const periodo = `${diasSemana[0].diaMes} a ${diasSemana[6].diaMes}`;
+            let texto = `*AMBIPAR LOGISTICS - ESCALA SEMANAL & DSR*\n`;
+            texto += `*Período:* ${periodo} | *Base:* Paulínia/SP\n`;
+            texto += `*Responsável Técnico:* Carlos Eduardo (Analista de Logística)\n`;
+            texto += `*Auditoria:* Conforme Lei 13.103/2015\n\n`;
+
+            filtered.forEach((m, idx) => {
+              const esc = getEscalaMotorista(m.id, idx);
+              const dsrCount = esc.filter((s) => s === 'dsr' || s === 'ferias').length;
+              texto += `🚛 *${m.nome}* (${m.veiculoFixoPlaca || 'Rotativo'})\n`;
+              diasSemana.forEach((d, i) => {
+                const st = esc[i];
+                const emoji =
+                  st === 'viagem'
+                    ? '🚛'
+                    : st === 'patio'
+                    ? '🏢'
+                    : st === 'dsr'
+                    ? '🛌'
+                    : st === 'standby'
+                    ? '⏱️'
+                    : '🏖️';
+                texto += `  ${d.sigla} (${d.diaMes}): ${emoji} ${CONFIG_ESCALA[st].label}\n`;
+              });
+              texto += `  _Status DSR: ${
+                dsrCount >= 1 ? '✅ Conforme (Descanso 24h assegurado)' : '⚠️ Alerta DSR Pendente'
+              }\n\n`;
+            });
+
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+          };
+
+          return (
+            <div className="space-y-5">
+              {/* Barra Superior: Navegação de Semanas & Ações Rápidas */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
+                {/* Seletor de Semana */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => setOffsetSemana((prev) => prev - 1)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                      title="Semana Anterior"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOffsetSemana(0)}
+                      className="px-3 py-1 text-xs font-bold text-white hover:bg-slate-800 rounded-lg transition"
+                    >
+                      Semana Atual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOffsetSemana((prev) => prev + 1)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                      title="Próxima Semana"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-white">
+                        {diasSemana[0].diaMes} a {diasSemana[6].diaMes}
+                      </span>
+                      {offsetSemana === 0 && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">
+                          Semana Vigente
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Escala operacional da tripulação rodoviária e jornada de trabalho
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ações da Escala */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleAutoBalancearEscala}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-750 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition"
+                    title="Distribui viagens e garante folga DSR para todos os motoristas"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Auto-balancear DSR</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCompartilharWhatsApp}
+                    className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp Equipe</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-3.5 py-2 rounded-xl bg-ambipar-500 hover:bg-ambipar-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-ambipar-500/20 transition"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Imprimir Grade A4</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Faixa de KPIs Operacionais do Dia & Auditoria Trabalhista */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Escalados</span>
+                  <strong className="text-xl font-black text-white mt-1 block">
+                    {filtered.length} <span className="text-xs font-normal text-slate-500">condutores</span>
+                  </strong>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-blue-500/30">
+                  <span className="text-[10px] text-blue-400 uppercase font-bold flex items-center gap-1">
+                    <Truck className="w-3 h-3" />
+                    Em Viagem Hoje
+                  </span>
+                  <strong className="text-xl font-black text-blue-300 mt-1 block">{emViagemHoje}</strong>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/30">
+                  <span className="text-[10px] text-emerald-400 uppercase font-bold flex items-center gap-1">
+                    <Building className="w-3 h-3" />
+                    No Pátio / Base
+                  </span>
+                  <strong className="text-xl font-black text-emerald-300 mt-1 block">{emPatioHoje}</strong>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-purple-500/30">
+                  <span className="text-[10px] text-purple-400 uppercase font-bold flex items-center gap-1">
+                    <HeartPulse className="w-3 h-3" />
+                    Em DSR (Descanso)
+                  </span>
+                  <strong className="text-xl font-black text-purple-300 mt-1 block">{emDsrHoje}</strong>
+                </div>
+
+                <div
+                  className={`p-3.5 rounded-xl bg-slate-900 border ${
+                    percConformidade === 100 ? 'border-emerald-500/40' : 'border-amber-500/40'
+                  } col-span-2 sm:col-span-1`}
+                >
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Conformidade DSR</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <strong
+                      className={`text-xl font-black ${
+                        percConformidade === 100 ? 'text-emerald-400' : 'text-amber-400'
+                      }`}
+                    >
+                      {percConformidade}%
+                    </strong>
+                    <span className="text-[10px] text-slate-400">
+                      {conformesDsrCount}/{filtered.length} regulares
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Alerta Legal: Lei 13.103/2015 */}
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-ambipar-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  <span className="font-bold text-white">Auditoria da Lei do Motorista (Lei Federal nº 13.103/2015): </span>
+                  O descanso semanal remunerado (DSR) de 24 horas consecutivas é obrigatório no período de 7 dias para transporte rodoviário de cargas. Motoristas sem descanso semanal registrado acusam infração trabalhista e perda de conformidade SASSMAQ.
+                </div>
+              </div>
+
+              {/* Matriz Interativa da Escala Semanal */}
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 overflow-x-auto shadow-sm">
+                <table className="w-full text-left text-xs min-w-[860px]">
+                  <thead>
+                    <tr className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                      <th className="py-3 px-3 min-w-[200px]">Motorista &bull; Veículo</th>
+                      {diasSemana.map((dia) => (
+                        <th
+                          key={dia.dataIso}
+                          className={`py-3 px-2 text-center transition ${
+                            dia.isHoje ? 'bg-ambipar-950/40 text-ambipar-400 font-black' : ''
+                          }`}
+                        >
+                          <div>{dia.sigla}</div>
+                          <div className="text-[10px] font-mono text-slate-400 font-normal">{dia.diaMes}</div>
+                        </th>
+                      ))}
+                      <th className="py-3 px-3 text-center">Horas Previstas</th>
+                      <th className="py-3 px-3 text-center min-w-[130px]">Auditoria DSR</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-medium">
+                    {filtered.map((m, mIdx) => {
+                      const escala = getEscalaMotorista(m.id, mIdx);
+                      const totalHoras = escala.reduce((acc, st) => acc + CONFIG_ESCALA[st].horas, 0);
+                      const totalDsr = escala.filter((st) => st === 'dsr' || st === 'ferias').length;
+                      const hasDsrInfracao = totalDsr === 0;
+
+                      return (
+                        <tr
+                          key={m.id}
+                          className={`hover:bg-slate-800/40 transition ${
+                            hasDsrInfracao ? 'bg-rose-950/10' : ''
+                          }`}
+                        >
+                          {/* Coluna Motorista */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] text-ambipar-400 font-black">
+                                {m.nome.charAt(0)}
+                              </span>
+                              <div>
+                                <strong className="text-white font-bold block">{m.nome}</strong>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {m.veiculoFixoPlaca || 'Rotativo'} &bull; {m.funcao || 'Motorista Titular'}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 7 Dias da Semana */}
+                          {diasSemana.map((dia, diaIdx) => {
+                            const statusDia = escala[diaIdx];
+                            const cfg = CONFIG_ESCALA[statusDia] || CONFIG_ESCALA.viagem;
+
+                            return (
+                              <td
+                                key={dia.dataIso}
+                                className={`py-2 px-1 text-center ${dia.isHoje ? 'bg-ambipar-950/20' : ''}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleAlternarDiaEscala(m.id, diaIdx, mIdx)}
+                                  className={`w-full py-1.5 px-1.5 rounded-lg border text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95 ${cfg.bg} ${cfg.text} ${cfg.border}`}
+                                  title={`${cfg.label} (${cfg.horas}h) - Clique para alternar status`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
+                                  <span>{cfg.sigla}</span>
+                                </button>
+                              </td>
+                            );
+                          })}
+
+                          {/* Carga Horária Prevista */}
+                          <td className="py-3 px-3 text-center">
+                            <span className="font-mono font-bold text-white">{totalHoras}h</span>
+                            <span className="text-[10px] text-slate-400 block font-normal">
+                              {totalHoras > 44 ? `+${totalHoras - 44}h extra` : 'Normal 44h'}
+                            </span>
+                          </td>
+
+                          {/* Auditoria DSR */}
+                          <td className="py-3 px-3 text-center">
+                            {hasDsrInfracao ? (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/50 flex items-center justify-center gap-1 animate-pulse">
+                                <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                                <span>SEM DSR (0/7d)</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center justify-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                                <span>DSR Conforme ({totalDsr}d)</span>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Legenda de Cores & Turnos */}
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between flex-wrap gap-3 text-xs">
+                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  Legenda de Turnos:
+                </span>
+                <div className="flex items-center gap-4 flex-wrap text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    <span className="text-slate-300">
+                      <strong>VIAG:</strong> Em Viagem Rodoviária (8h)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span className="text-slate-300">
+                      <strong>PÁTIO:</strong> Operacional / Manobra (8h)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    <span className="text-slate-300">
+                      <strong>DSR:</strong> Descanso Semanal 24h (0h)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span className="text-slate-300">
+                      <strong>PLANT:</strong> Stand-by / Sobreaviso (4h)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                    <span className="text-slate-300">
+                      <strong>FÉRIAS:</strong> Ausência Legal (0h)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       )}
 
       {/* =========================================================

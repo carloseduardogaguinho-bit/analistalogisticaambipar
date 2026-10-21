@@ -12,7 +12,11 @@ import {
   HardDrive,
   Clock,
   Layers,
+  Sparkles,
+  Trash2,
+  Truck,
 } from 'lucide-react';
+import { CENARIO_DEMO_AMBIPAR, CENARIO_ZERADO_AMBIPAR } from '../data/demonstracaoAmbipar';
 import {
   Veiculo,
   Motorista,
@@ -191,6 +195,41 @@ export const ModalBackupDados: React.FC<ModalBackupDadosProps> = ({
     }
   };
 
+  const handleCarregarDemonstracaoVip = () => {
+    if (
+      confirm(
+        'Deseja carregar o Cenário de Demonstração VIP Ambipar?\n\n' +
+          'Isso preencherá o sistema com 4 caminhões pesados (Volvo FH 540, Scania R450, Actros 2651, Constellation 24.280), carretas tanque com CIV/CIPP, viagens ativas com MTR e gestão de pneus.\n\n' +
+          'Excelente para apresentações executivas e validação de rotinas!'
+      )
+    ) {
+      onRestaurarBackup(CENARIO_DEMO_AMBIPAR);
+      setBackupPreview(null);
+      setImportStatus('Demonstração VIP Ambipar carregada com sucesso!');
+      setTimeout(() => {
+        setImportStatus(null);
+        onClose();
+      }, 1500);
+    }
+  };
+
+  const handleLimparBaseOperacao = () => {
+    if (
+      confirm(
+        'Atenção: Deseja realmente zerar todos os dados para iniciar o cadastro da sua operação real?\n\n' +
+          'Todos os veículos, motoristas, viagens e cotações atuais serão removidos, deixando a plataforma 100% limpa.'
+      )
+    ) {
+      onRestaurarBackup(CENARIO_ZERADO_AMBIPAR);
+      setBackupPreview(null);
+      setImportStatus('Base operacional zerada com sucesso! Pronto para cadastrar a frota real.');
+      setTimeout(() => {
+        setImportStatus(null);
+        onClose();
+      }, 1500);
+    }
+  };
+
   const totalRegistrosAtuais =
     veiculos.length +
     motoristas.length +
@@ -271,6 +310,63 @@ export const ModalBackupDados: React.FC<ModalBackupDadosProps> = ({
             <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold">
               100% Protegido
             </span>
+          </div>
+
+          {/* Atalhos Rápidos: Demonstração VIP vs Operação Real Limpa */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-ambipar-400" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Ambiente de Demonstração &amp; Operação Real
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono">1 Clique para Alternar</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Opção Demo VIP */}
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 flex flex-col justify-between space-y-3 hover:border-emerald-500/50 transition">
+                <div>
+                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                    <Truck className="w-4 h-4" />
+                    <span>Carregar Demonstração VIP Ambipar</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Carrega frota pesada realística (Volvo FH 540, Scania R450, Actros, carretas tanque químicos, viagens em trânsito Paulínia-Betim/Camaçari, motoristas capacitados MOPP e pneus mapeados).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCarregarDemonstracaoVip}
+                  className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/50 transition flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Carregar Demonstração VIP</span>
+                </button>
+              </div>
+
+              {/* Opção Base Zerada */}
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 flex flex-col justify-between space-y-3 transition">
+                <div>
+                  <div className="flex items-center gap-1.5 text-slate-300 font-bold text-xs">
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    <span>Iniciar Operação Real (Base Limpa)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Zera todos os veículos, motoristas, viagens e cotações para você cadastrar a frota real da sua unidade Ambipar sem dados fictícios residuais.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLimparBaseOperacao}
+                  className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/60 border border-slate-700 text-slate-300 font-bold text-xs transition flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Limpar Todos os Dados</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Grid: Exportar vs Importar */}

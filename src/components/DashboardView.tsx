@@ -42,6 +42,8 @@ interface DashboardViewProps {
   onNavigateToTab: (tab: any) => void;
   onOpenQrCode?: () => void;
   onOpenTorreTv?: () => void;
+  onCarregarDemo?: () => void;
+  onOpenBackup?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -53,6 +55,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateToTab,
   onOpenQrCode,
   onOpenTorreTv,
+  onCarregarDemo,
+  onOpenBackup,
 }) => {
   // Calculations
   const totalViagens = viagens.length;
@@ -186,6 +190,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   }}
                 ></div>
               </div>
+            </div>
+          </div>
+
+          {/* Banner de Demonstração VIP vs Operação Real */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-slate-950/60 to-teal-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                  <span>Deseja demonstrar o sistema completo para os gestores da Ambipar?</span>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                    1 Clique
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  Carregue instantaneamente frota pesada realística (Volvo, Scania, carretas tanque com CIV/CIPP, viagens ativas Paulínia-Betim/Camaçari e pneus mapeados).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              {onCarregarDemo && (
+                <button
+                  type="button"
+                  onClick={onCarregarDemo}
+                  className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Carregar Demonstração VIP</span>
+                </button>
+              )}
+              {onOpenBackup && (
+                <button
+                  type="button"
+                  onClick={onOpenBackup}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold text-xs transition"
+                >
+                  <span>Backup / Limpar</span>
+                </button>
+              )}
             </div>
           </div>
 

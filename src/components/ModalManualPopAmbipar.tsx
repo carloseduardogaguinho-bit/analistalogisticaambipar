@@ -14,6 +14,8 @@ import {
   ExternalLink,
   Printer,
   Scale,
+  Calendar,
+  Disc,
 } from 'lucide-react';
 
 interface ModalManualPopAmbiparProps {
@@ -25,7 +27,7 @@ export const ModalManualPopAmbipar: React.FC<ModalManualPopAmbiparProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [activeSection, setActiveSection] = useState<'sassmaq' | 'mtr' | 'emergencia' | 'saving'>('sassmaq');
+  const [activeSection, setActiveSection] = useState<'sassmaq' | 'mtr' | 'emergencia' | 'saving' | 'lei13103' | 'pneus'>('sassmaq');
 
   if (!isOpen) return null;
 
@@ -112,6 +114,32 @@ export const ModalManualPopAmbipar: React.FC<ModalManualPopAmbiparProps> = ({
           >
             <DollarSign className="w-4 h-4" />
             <span>4. Equalização de Saving</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('lei13103')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+              activeSection === 'lei13103'
+                ? 'bg-ambipar-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Scale className="w-4 h-4" />
+            <span>5. Lei do Motorista &amp; DSR</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('pneus')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+              activeSection === 'pneus'
+                ? 'bg-ambipar-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Disc className="w-4 h-4" />
+            <span>6. Gestão de Pneus &amp; CPK</span>
           </button>
         </div>
 
@@ -292,6 +320,88 @@ export const ModalManualPopAmbipar: React.FC<ModalManualPopAmbiparProps> = ({
                   </h5>
                   <p className="text-slate-300">
                     Serviços acima de R$ 3.000,00 exigem no mínimo 3 propostas comerciais (peças originais + mão de obra equalizada com garantia mínima de 90 dias).
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Seção 5: Lei do Motorista (Lei 13.103/2015) & DSR */}
+          {activeSection === 'lei13103' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-emerald-400" />
+                  <span>Jornada de Trabalho, Tacógrafo &amp; DSR (Lei Federal nº 13.103/2015)</span>
+                </h4>
+                <p className="text-slate-400 leading-relaxed">
+                  Como Analista de Logística, você deve auditar as jornadas diárias dos condutores através do cronotacógrafo e da grade de escalas para garantir conformidade jurídica trabalhista e evitar passivos ou acidentes por fadiga.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400">
+                    1. Limites de Condução e Descanso Diário
+                  </h5>
+                  <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                    <li><strong>Direção Contínua:</strong> Máximo de 5h30 ininterruptas de condução (Art. 67-C).</li>
+                    <li><strong>Parada Obrigatória:</strong> 30 minutos de descanso a cada 5h30 de volante.</li>
+                    <li><strong>Jornada Padrão:</strong> 8 horas diárias, permitidas até 2 horas extras normais (ou até 4h mediante CCT).</li>
+                    <li><strong>Intervalo Interjornada:</strong> Mínimo de 11 horas de repouso consecutivo a cada 24 horas.</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider text-cyan-400">
+                    2. DSR Obrigatório &amp; Tempo de Espera
+                  </h5>
+                  <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                    <li><strong>DSR Semanal:</strong> 24 horas de descanso contínuo no período de 7 dias (ou acumuladas em viagens de longa distância).</li>
+                    <li><strong>Tempo de Espera:</strong> Horas paradas para carga/descarga não contam como jornada de direção.</li>
+                    <li><strong>Indenização de Espera:</strong> Remunerada na proporção de 30% do valor da hora normal.</li>
+                    <li><strong>Guarda do Tacógrafo:</strong> Discos de diagrama ou relatórios eletrônicos devem ser arquivados na base por 90 dias.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Seção 6: Gestão de Pneus & CPK */}
+          {activeSection === 'pneus' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Disc className="w-4 h-4 text-emerald-400" />
+                  <span>Diretrizes de Gestão de Pneus, TWI &amp; Custo por KM (CPK)</span>
+                </h4>
+                <p className="text-slate-400 leading-relaxed">
+                  O pneu representa o 2º maior custo operacional de uma transportadora (logo após o diesel). Controlar o número de fogo, a profundidade do sulco e a recapabilidade garante segurança em produtos químicos e rentabilidade na ponta do lápis.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider text-amber-400">
+                    1. Critérios de Sulco &amp; TWI Legal (Resolução CONTRAN 913)
+                  </h5>
+                  <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                    <li><strong>Mínimo Legal Obrigatório:</strong> Sulco de 1.6 mm (indicador TWI). Abaixo disso é infração grave e apreensão.</li>
+                    <li><strong>Política Preventiva Ambipar:</strong> Retirar o pneu para recapagem com <strong>3.0 mm de sulco</strong> para preservar a carcaça.</li>
+                    <li><strong>Vida Útil (Recapas):</strong> Pneus direcionais devem rodar apenas em 1ª vida (novos). Eixos de tração e truck aceitam R1 e R2.</li>
+                    <li><strong>Calibragem:</strong> Aferição semanal a frio (110 a 120 PSI conforme tabela de carga por eixo).</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400">
+                    2. Cálculo de CPK (Custo por KM Rodado)
+                  </h5>
+                  <div className="p-2.5 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-white">
+                    CPK = (Custo de Aquisição + Custos de Recapagem) / KM Total Rodado
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Uma boa gestão de pneus na frota pesada Ambipar atinge um CPK abaixo de <strong>R$ 0,025/km por pneu</strong>. Sulcos desbalanceados aumentam o consumo de diesel em até 4%.
                   </p>
                 </div>
               </div>

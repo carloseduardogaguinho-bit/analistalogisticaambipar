@@ -58,6 +58,7 @@ import {
   saveStoredPneus,
 } from './utils/storage';
 import { ParsedSefazXml } from './utils/sebraeUtils';
+import { CENARIO_DEMO_AMBIPAR } from './data/demonstracaoAmbipar';
 
 import { getSupabaseCredentials, getSupabaseClient } from './services/supabase';
 
@@ -1104,6 +1105,8 @@ export const App: React.FC = () => {
                 setIsQrCodeModalOpen(true);
               }}
               onOpenTorreTv={() => setIsTorreTvOpen(true)}
+              onCarregarDemo={() => handleRestaurarBackup(CENARIO_DEMO_AMBIPAR)}
+              onOpenBackup={() => setIsBackupModalOpen(true)}
             />
           )}
 
